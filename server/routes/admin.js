@@ -1,0 +1,120 @@
+import express from "express";
+import pool from "../config/database.js";
+
+const router = express.Router();
+
+// Admin login
+router.post("/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Hardcoded credentials for now (use env vars in production)
+    if (username === "JayT1017" && password === "Ametepe1920@") {
+      res.json({
+        success: true,
+        token: "admin_token_" + Date.now(),
+        message: "Login successful",
+      });
+    } else {
+      res.status(401).json({ error: "Invalid credentials" });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// Get dashboard stats
+router.get("/stats", async (req, res) => {
+  try {
+    const merchCount = await pool.query("SELECT COUNT(*) FROM merch");
+    const ordersCount = await pool.query("SELECT COUNT(*) FROM orders");
+    const totalRevenue = await pool.query("SELECT SUM(total) as revenue FROM orders WHERE status = 'completed'");
+    const visitors = await pool.query("SELECT COUNT(*) as count FROM page_visits");
+
+    res.json({
+      totalOrders: parseInt(ordersCount.rows[0].count) || 0,
+      totalRevenue: parseFloat(totalRevenue.rows[0].revenue) || 0,
+      merchItems: parseInt(merchCount.rows[0].count) || 0,
+      visitors: parseInt(visitors.rows[0].count) || 0,
+    });
+  } catch (err) {
+    console.error(err);
+    // Return mock data if tables don't exist yet
+    res.json({
+      totalOrders: 0,
+      totalRevenue: 0,
+      merchItems: 4,
+      visitors: 0,
+    });
+  }
+});
+
+// Get all orders
+router.get("/orders", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM orders ORDER BY created_at DESC LIMIT 20");
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.json([]); // Return empty array if table doesn't exist
+  }
+});
+
+// Create order
+router.post("/orders", async (req, res) => {
+  try {
+    const { customerName, customerPhone, items, total, notes } = req.body;
+    const result = await pool.query(
+      "INSERT INTO orders (customer_name, customer_phone, items, total, notes, status) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [customerName, customerPhone, JSON.stringify(items), total, notes, "pending"]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create order" });
+  }
+});
+
+// Get admin profile
+router.get("/profile", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM admin_profile LIMIT 1");
+    if (result.rows.length === 0) {
+      return res.json({
+        artistName: "JayT1017",
+        bio: "Emo Rap Artist from Ghana",
+        profileImage: "",
+        socialLinks: {
+          instagram: "https://instagram.com/jay_t1017",
+          tiktok: "https://tiktok.com/@jay_t1017",
+          twitter: "https://twitter.com/jayt1017x",
+          facebook: "https://facebook.com/JayT1017",
+          snapchat: "https://snapchat.com/add/jay_t2021395",
+          appleMusic: "https://music.apple.com",
+        },
+      });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch profile" });
+  }
+});
+
+// Update admin profile
+router.put("/profile", async (req, res) => {
+  try {
+    const { artistName, bio, profileImage, socialLinks } = req.body;
+    const result = await pool.query(
+      "UPDATE admin_profile SET artist_name = $1, bio = $2, profile_image = $3, social_links = $4 WHERE id = 1 RETURNING *",
+      [artistName, bio, profileImage, JSON.stringify(socialLinks)]
+    );
+    res.json(result.rows[0] || { message: "Profile updated" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
+export default router;

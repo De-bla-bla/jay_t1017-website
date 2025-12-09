@@ -1,0 +1,33 @@
+{
+  "name": "jayt1017-website",
+  "version": "1.0.0",
+  "description": "JayT1017 Artist Website & E-commerce Platform",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev:server": "node server/index.js",
+    "dev:client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "build": "cd client && npm run build",
+    "preview": "cd client && npm run preview",
+    "server:init": "node server/config/init.js"
+  },
+  "keywords": ["artist", "ecommerce", "music", "merch"],
+  "author": "JayT1017",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.0.2",
+    "pg": "^8.16.3",
+    "react-router-dom": "^7.10.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
+
