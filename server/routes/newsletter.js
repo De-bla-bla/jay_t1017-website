@@ -33,6 +33,28 @@ transporter.verify((error, success) => {
   }
 });
 
+// Health check - verify SMTP configuration
+router.get("/health", (req, res) => {
+  const smtpConfigured = {
+    smtpHost: !!process.env.SMTP_HOST,
+    smtpPort: !!process.env.SMTP_PORT,
+    smtpUser: !!process.env.SMTP_USER,
+    smtpPass: !!process.env.SMTP_PASS,
+    emailFrom: !!process.env.EMAIL_FROM,
+    emailUser: !!process.env.EMAIL_USER,
+  };
+
+  const allConfigured = Object.values(smtpConfigured).every((v) => v === true);
+
+  res.json({
+    status: allConfigured ? "✓ Email system configured" : "⚠️ Email system NOT fully configured",
+    configuration: smtpConfigured,
+    missingVariables: Object.entries(smtpConfigured)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key),
+  });
+});
+
 // Subscribe to newsletter
 router.post("/subscribe", async (req, res) => {
   try {
