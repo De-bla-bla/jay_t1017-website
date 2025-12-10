@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Mail, Music, ShoppingBag, Instagram, TrendingUp, Music2, Facebook, Camera } from "lucide-react";
+import axios from "axios";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import WhatsAppButton from "../components/WhatsAppButton";
@@ -7,15 +8,34 @@ import MerchCard from "../components/MerchCard";
 import { SOCIAL_LINKS, WHATSAPP_NUMBER } from "../utils/constants";
 import { openWhatsApp } from "../utils/whatsapp";
 
+const runtime = (typeof window !== 'undefined' && window.__RUNTIME__) || {};
+const API_URL = runtime.VITE_API_URL || import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 export default function Home() {
-  const [heroImage, setHeroImage] = useState(null);
+  const [heroImage, setHeroImage] = useState(() => localStorage.getItem("heroImage"));
+  const [profile, setProfile] = useState({
+    artistName: "JayT1017",
+    bio: "Emo Rap Artist from Ghana",
+    profileImage: null,
+  });
   
-  // Load hero image from localStorage when component mounts
+  // Fetch live profile from API on mount
   useEffect(() => {
-    const savedHeroImage = localStorage.getItem("heroImage");
-    if (savedHeroImage) {
-      setHeroImage(savedHeroImage);
-    }
+    const fetchProfile = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/admin/profile`);
+        setProfile({
+          artistName: response.data.artistName || "JayT1017",
+          bio: response.data.bio || "Emo Rap Artist from Ghana",
+          profileImage: response.data.profileImage || null,
+        });
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+        // Keep defaults if fetch fails
+      }
+    };
+    
+    fetchProfile();
   }, []);
   
   const [merch] = useState([
@@ -72,13 +92,13 @@ export default function Home() {
           {/* Text Content */}
           <div className="text-center md:text-left">
             <h1 className="text-5xl md:text-7xl font-bold mb-4 gradient-text animate-fade-in">
-              JayT1017
+              {profile.artistName}
             </h1>
             <p className="text-xl md:text-2xl text-gray-300 mb-2">
               Emo Rap • Songwriter • Artist
             </p>
             <p className="text-gray-400 mb-8 text-lg leading-relaxed">
-              From the heart of Ghana 🇬🇭 • Creating authentic music and exclusive merchandise for my supporters worldwide.
+              {profile.bio}
             </p>
 
             {/* CTA Buttons */}
