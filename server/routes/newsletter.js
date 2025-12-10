@@ -78,7 +78,7 @@ router.post("/subscribe", async (req, res) => {
 
     // Send confirmation email via SendGrid
     try {
-      if (sendgridApiKey) {
+      if (process.env.SENDGRID_API_KEY) {
         await sgMail.send({
           from: process.env.EMAIL_FROM || "noreply@jayt1017.com",
           to: email,
@@ -102,7 +102,7 @@ router.post("/subscribe", async (req, res) => {
         console.log("✓ Welcome email sent to:", email);
       }
     } catch (emailErr) {
-      console.warn("Email sending failed (this is okay if email is not configured):", emailErr.message);
+      console.warn("⚠️ Email sending failed (this is okay if email is not configured):", emailErr.message);
       // Still return success if database insert worked
     }
 
@@ -134,8 +134,12 @@ router.post("/send-to-all", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Subject and content are required" });
     }
 
-    if (!sendgridApiKey) {
-      return res.status(503).json({ error: "Email service not configured. Set SENDGRID_API_KEY" });
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error("❌ SENDGRID_API_KEY is not configured");
+      return res.status(503).json({ 
+        error: "Email service not configured. Set SENDGRID_API_KEY environment variable on Railway",
+        configured: false 
+      });
     }
 
     // Get all subscribers
@@ -154,14 +158,17 @@ router.post("/send-to-all", requireAuth, async (req, res) => {
       console.log(`Attempting to send email to ${emails.length} subscribers...`);
       const fromEmail = process.env.EMAIL_FROM || "noreply@jayt1017.com";
       
-      await sgMail.sendMultiple({
-        from: fromEmail,
-        personalizations: emails.map((email) => ({
-          to: [{ email }],
-        })),
-        subject: subject,
-        html: htmlContent,
-      });
+      // Use send instead of sendMultiple for better compatibility
+      const promises = emails.map((email) =>
+        sgMail.send({
+          from: fromEmail,
+          to: email,
+          subject: subject,
+          html: htmlContent,
+        })
+      );
+
+      await Promise.all(promises);
 
       console.log(`✓ Email sent to ${emails.length} subscribers`);
       res.json({
@@ -169,15 +176,16 @@ router.post("/send-to-all", requireAuth, async (req, res) => {
         subscriberCount: emails.length,
       });
     } catch (emailErr) {
-      console.error("Email sending failed:", emailErr);
-      console.error("SendGrid API Key configured:", !!process.env.SENDGRID_API_KEY);
+      console.error("❌ Email sending failed:", emailErr.message);
+      console.error("Error details:", emailErr);
+      console.error("SendGrid API Key exists:", !!process.env.SENDGRID_API_KEY);
       res.status(500).json({ 
         error: "Failed to send email: " + emailErr.message,
-        debug: process.env.NODE_ENV === "development" ? emailErr : undefined
+        type: emailErr.code || "UNKNOWN_ERROR"
       });
     }
   } catch (err) {
-    console.error("Error in send-to-all:", err.message);
+    console.error("❌ Error in send-to-all:", err.message);
     res.status(500).json({ error: "Failed to send emails: " + err.message });
   }
 });
@@ -191,8 +199,12 @@ router.post("/notify-new-music", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Title and URL are required" });
     }
 
-    if (!sendgridApiKey) {
-      return res.status(503).json({ error: "Email service not configured. Set SENDGRID_API_KEY" });
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error("❌ SENDGRID_API_KEY is not configured");
+      return res.status(503).json({ 
+        error: "Email service not configured. Set SENDGRID_API_KEY environment variable",
+        configured: false 
+      });
     }
 
     // Get all subscribers
@@ -227,14 +239,16 @@ router.post("/notify-new-music", requireAuth, async (req, res) => {
       const fromEmail = process.env.EMAIL_FROM || "noreply@jayt1017.com";
       console.log(`Sending music notification to ${emails.length} subscribers...`);
       
-      await sgMail.sendMultiple({
-        from: fromEmail,
-        personalizations: emails.map((email) => ({
-          to: [{ email }],
-        })),
-        subject: `🎵 New Release: ${title}`,
-        html: htmlContent,
-      });
+      const promises = emails.map((email) =>
+        sgMail.send({
+          from: fromEmail,
+          to: email,
+          subject: `🎵 New Release: ${title}`,
+          html: htmlContent,
+        })
+      );
+
+      await Promise.all(promises);
 
       console.log(`✓ Music notification sent to ${emails.length} subscribers`);
       res.json({
@@ -242,14 +256,15 @@ router.post("/notify-new-music", requireAuth, async (req, res) => {
         subscriberCount: emails.length,
       });
     } catch (emailErr) {
-      console.error("Music notification sending failed:", emailErr);
+      console.error("❌ Music notification sending failed:", emailErr.message);
+      console.error("Error details:", emailErr);
       res.status(500).json({ 
         error: "Failed to send notification: " + emailErr.message,
-        debug: process.env.NODE_ENV === "development" ? emailErr : undefined
+        type: emailErr.code || "UNKNOWN_ERROR"
       });
     }
   } catch (err) {
-    console.error("Error in notify-new-music:", err.message);
+    console.error("❌ Error in notify-new-music:", err.message);
     res.status(500).json({ error: "Failed to send notification: " + err.message });
   }
 });
@@ -263,8 +278,12 @@ router.post("/notify-new-merch", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Name and price are required" });
     }
 
-    if (!sendgridApiKey) {
-      return res.status(503).json({ error: "Email service not configured. Set SENDGRID_API_KEY" });
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error("❌ SENDGRID_API_KEY is not configured");
+      return res.status(503).json({ 
+        error: "Email service not configured. Set SENDGRID_API_KEY environment variable",
+        configured: false 
+      });
     }
 
     // Get all subscribers
@@ -298,14 +317,16 @@ router.post("/notify-new-merch", requireAuth, async (req, res) => {
       const fromEmail = process.env.EMAIL_FROM || "noreply@jayt1017.com";
       console.log(`Sending merch notification to ${emails.length} subscribers...`);
       
-      await sgMail.sendMultiple({
-        from: fromEmail,
-        personalizations: emails.map((email) => ({
-          to: [{ email }],
-        })),
-        subject: `🛍️ New Drop: ${name}`,
-        html: htmlContent,
-      });
+      const promises = emails.map((email) =>
+        sgMail.send({
+          from: fromEmail,
+          to: email,
+          subject: `🛍️ New Drop: ${name}`,
+          html: htmlContent,
+        })
+      );
+
+      await Promise.all(promises);
 
       console.log(`✓ Merch notification sent to ${emails.length} subscribers`);
       res.json({
@@ -313,14 +334,15 @@ router.post("/notify-new-merch", requireAuth, async (req, res) => {
         subscriberCount: emails.length,
       });
     } catch (emailErr) {
-      console.error("Merch notification sending failed:", emailErr);
+      console.error("❌ Merch notification sending failed:", emailErr.message);
+      console.error("Error details:", emailErr);
       res.status(500).json({ 
         error: "Failed to send notification: " + emailErr.message,
-        debug: process.env.NODE_ENV === "development" ? emailErr : undefined
+        type: emailErr.code || "UNKNOWN_ERROR"
       });
     }
   } catch (err) {
-    console.error("Error in notify-new-merch:", err.message);
+    console.error("❌ Error in notify-new-merch:", err.message);
     res.status(500).json({ error: "Failed to send notification: " + err.message });
   }
 });
