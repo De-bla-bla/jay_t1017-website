@@ -39,10 +39,14 @@ if (process.env.NODE_ENV === "production" || process.env.SERVE_CLIENT === "true"
         // Read index.html and inject runtime config so client can pick up secrets at runtime
         let indexHtml = fs.readFileSync(indexPath, 'utf8');
         const runtimeConfig = {
-          VITE_FILESTACK_API_KEY: process.env.VITE_FILESTACK_API_KEY || process.env.FILESTACK_API_KEY || '',
+          VITE_FILESTACK_API_KEY: process.env.VITE_FILESTACK_API_KEY || '',
           VITE_API_URL: process.env.VITE_API_URL || '',
         };
-        const injectScript = `\n<script>window.__RUNTIME__ = ${JSON.stringify(runtimeConfig)};</script>\n`;
+        console.log('Injecting runtime config:', { 
+          hasFilestackKey: !!process.env.VITE_FILESTACK_API_KEY,
+          hasApiUrl: !!process.env.VITE_API_URL 
+        });
+        const injectScript = `<script>window.__RUNTIME__ = ${JSON.stringify(runtimeConfig)};</script>`;
         // Inject before closing </head> if present, otherwise before </body>
         if (indexHtml.includes('</head>')) {
           indexHtml = indexHtml.replace('</head>', `${injectScript}</head>`);
