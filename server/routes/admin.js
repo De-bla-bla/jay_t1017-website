@@ -81,8 +81,8 @@ router.post("/orders", requireAuth, async (req, res) => {
   }
 });
 
-// Get admin profile (requires auth)
-router.get("/profile", requireAuth, async (req, res) => {
+// Get admin profile (PUBLIC - no auth required, used by landing page)
+router.get("/profile", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM admin_profile LIMIT 1");
     if (result.rows.length === 0) {
