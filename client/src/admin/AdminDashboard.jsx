@@ -12,6 +12,8 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [isOpen, setIsOpen] = useState(false); // Mobile menu state
+  const [darkMode, setDarkMode] = useState(true); // Dark mode toggle
+  const [emailNotifications, setEmailNotifications] = useState(true); // Email notifications toggle
   const [filestackClient, setFilestackClient] = useState(null);
   const [_loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
@@ -900,16 +902,39 @@ export default function AdminDashboard() {
         {activeTab === "settings" && (
           <div>
             <h2 className="text-3xl font-bold mb-8 gradient-text">Settings</h2>
-            <div className="bg-dark-800 rounded-lg p-6 border border-dark-700 space-y-4">
+            <div className="bg-dark-800 rounded-lg p-6 border border-dark-700 space-y-6">
               <div className="flex justify-between items-center">
-                <span>Dark Mode</span>
-                <input type="checkbox" defaultChecked className="w-6 h-6" />
+                <div>
+                  <span className="font-semibold">Dark Mode</span>
+                  <p className="text-sm text-gray-400">Currently: {darkMode ? "Enabled ✓" : "Disabled"}</p>
+                </div>
+                <input 
+                  type="checkbox" 
+                  checked={darkMode}
+                  onChange={(e) => setDarkMode(e.target.checked)}
+                  className="w-6 h-6 cursor-pointer" 
+                />
               </div>
+              <hr className="border-dark-700" />
               <div className="flex justify-between items-center">
-                <span>Email Notifications</span>
-                <input type="checkbox" defaultChecked className="w-6 h-6" />
+                <div>
+                  <span className="font-semibold">Email Notifications</span>
+                  <p className="text-sm text-gray-400">Receive email updates about orders and activity</p>
+                </div>
+                <input 
+                  type="checkbox" 
+                  checked={emailNotifications}
+                  onChange={(e) => setEmailNotifications(e.target.checked)}
+                  className="w-6 h-6 cursor-pointer" 
+                />
               </div>
-              <button className="btn-primary mt-6">Save Settings</button>
+              <hr className="border-dark-700" />
+              <div className="bg-blue-900/20 border border-blue-700/30 rounded p-4">
+                <p className="text-sm text-blue-200">
+                  <strong>Note:</strong> Dark mode is the only theme currently available. Light mode support coming soon!
+                </p>
+              </div>
+              <button className="btn-primary mt-6 w-full">Save Settings</button>
             </div>
           </div>
         )}
