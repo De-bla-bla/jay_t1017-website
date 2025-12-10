@@ -1,6 +1,7 @@
 import express from "express";
 import pool from "../config/database.js";
 import nodemailer from "nodemailer";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -92,13 +93,180 @@ router.post("/subscribe", async (req, res) => {
 });
 
 // Get all subscribers (for admin)
-router.get("/subscribers", async (req, res) => {
+router.get("/subscribers", requireAuth, async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM newsletter_subscribers ORDER BY subscribed_at DESC");
+    console.log(`✓ Retrieved ${result.rows.length} newsletter subscribers`);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
     res.json([]); // Return empty array if table doesn't exist
+  }
+});
+
+// Send email to all subscribers (for admin)
+router.post("/send-to-all", requireAuth, async (req, res) => {
+  try {
+    const { subject, htmlContent } = req.body;
+
+    if (!subject || !htmlContent) {
+      return res.status(400).json({ error: "Subject and content are required" });
+    }
+
+    // Get all subscribers
+    const subscribersResult = await pool.query(
+      "SELECT email FROM newsletter_subscribers ORDER BY email"
+    );
+
+    if (subscribersResult.rows.length === 0) {
+      return res.status(400).json({ error: "No subscribers to send to" });
+    }
+
+    const emails = subscribersResult.rows.map((row) => row.email);
+    const emailList = emails.join(", ");
+
+    // Send email to all subscribers
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com",
+        to: emailList,
+        subject: subject,
+        html: htmlContent,
+      });
+
+      console.log(`✓ Email sent to ${emails.length} subscribers`);
+      res.json({
+        message: `Email sent successfully to ${emails.length} subscribers`,
+        subscriberCount: emails.length,
+      });
+    } catch (emailErr) {
+      console.error("Email sending failed:", emailErr.message);
+      res.status(500).json({ error: "Failed to send email: " + emailErr.message });
+    }
+  } catch (err) {
+    console.error("Error in send-to-all:", err.message);
+    res.status(500).json({ error: "Failed to send emails: " + err.message });
+  }
+});
+
+// Auto-notify subscribers about new music
+router.post("/notify-new-music", requireAuth, async (req, res) => {
+  try {
+    const { title, artist, url, platform } = req.body;
+
+    if (!title || !url) {
+      return res.status(400).json({ error: "Title and URL are required" });
+    }
+
+    // Get all subscribers
+    const subscribersResult = await pool.query(
+      "SELECT email FROM newsletter_subscribers ORDER BY email"
+    );
+
+    if (subscribersResult.rows.length === 0) {
+      return res.status(400).json({ error: "No subscribers to notify" });
+    }
+
+    const emails = subscribersResult.rows.map((row) => row.email);
+    const emailList = emails.join(", ");
+
+    const htmlContent = `
+      <h2>🎵 New Music Release!</h2>
+      <p>Hey there!</p>
+      <p><strong>${artist || "JayT1017"}</strong> just released <strong>"${title}"</strong>!</p>
+      <p>Check it out on ${platform || "your favorite platform"}:</p>
+      <p><a href="${url}" target="_blank" style="padding: 12px 24px; background-color: #a855f7; color: white; text-decoration: none; border-radius: 6px; display: inline-block;">Listen Now</a></p>
+      <hr>
+      <p>Don't miss out on future releases - follow JayT1017 on all platforms:</p>
+      <ul>
+        <li><a href="https://instagram.com/jay_t1017">Instagram</a></li>
+        <li><a href="https://tiktok.com/@jay_t1017">TikTok</a></li>
+        <li><a href="https://twitter.com/jayt1017x">Twitter</a></li>
+      </ul>
+      <p>🔥 Stay tuned for more!</p>
+    `;
+
+    // Send notification email
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com",
+        to: emailList,
+        subject: `🎵 New Release: ${title}`,
+        html: htmlContent,
+      });
+
+      console.log(`✓ Music notification sent to ${emails.length} subscribers`);
+      res.json({
+        message: `Notification sent to ${emails.length} subscribers about "${title}"`,
+        subscriberCount: emails.length,
+      });
+    } catch (emailErr) {
+      console.error("Notification sending failed:", emailErr.message);
+      res.status(500).json({ error: "Failed to send notification: " + emailErr.message });
+    }
+  } catch (err) {
+    console.error("Error in notify-new-music:", err.message);
+    res.status(500).json({ error: "Failed to send notification: " + err.message });
+  }
+});
+
+// Auto-notify subscribers about new merchandise
+router.post("/notify-new-merch", requireAuth, async (req, res) => {
+  try {
+    const { name, price, category, image } = req.body;
+
+    if (!name || !price) {
+      return res.status(400).json({ error: "Name and price are required" });
+    }
+
+    // Get all subscribers
+    const subscribersResult = await pool.query(
+      "SELECT email FROM newsletter_subscribers ORDER BY email"
+    );
+
+    if (subscribersResult.rows.length === 0) {
+      return res.status(400).json({ error: "No subscribers to notify" });
+    }
+
+    const emails = subscribersResult.rows.map((row) => row.email);
+    const emailList = emails.join(", ");
+
+    const imageHtml = image ? `<p><img src="${image}" alt="${name}" style="max-width: 300px; border-radius: 8px; margin: 20px 0;"></p>` : "";
+
+    const htmlContent = `
+      <h2>🛍️ New Merchandise Drop!</h2>
+      <p>Hey there!</p>
+      <p>JayT1017 just released new ${category || "merchandise"}!</p>
+      <h3>${name}</h3>
+      <p><strong>Price: $${price}</strong></p>
+      ${imageHtml}
+      <p><a href="https://jayt1017-website-production.up.railway.app#merch" target="_blank" style="padding: 12px 24px; background-color: #ec4899; color: white; text-decoration: none; border-radius: 6px; display: inline-block;">Shop Now</a></p>
+      <hr>
+      <p>Limited stock available - don't miss out!</p>
+      <p>🔥 Get yours before they're gone!</p>
+    `;
+
+    // Send notification email
+    try {
+      await transporter.sendMail({
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com",
+        to: emailList,
+        subject: `🛍️ New Drop: ${name}`,
+        html: htmlContent,
+      });
+
+      console.log(`✓ Merch notification sent to ${emails.length} subscribers`);
+      res.json({
+        message: `Notification sent to ${emails.length} subscribers about "${name}"`,
+        subscriberCount: emails.length,
+      });
+    } catch (emailErr) {
+      console.error("Notification sending failed:", emailErr.message);
+      res.status(500).json({ error: "Failed to send notification: " + emailErr.message });
+    }
+  } catch (err) {
+    console.error("Error in notify-new-merch:", err.message);
+    res.status(500).json({ error: "Failed to send notification: " + err.message });
   }
 });
 

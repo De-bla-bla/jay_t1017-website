@@ -57,6 +57,12 @@ export default function AdminDashboard() {
     description: "",
   });
 
+  // Newsletter states
+  const [subscribers, setSubscribers] = useState([]);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailContent, setEmailContent] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+
   // Get JWT token from sessionStorage
   const getAuthHeaders = () => {
     const token = sessionStorage.getItem("admin_token");
@@ -114,6 +120,51 @@ export default function AdminDashboard() {
     }
   };
 
+  // Fetch newsletter subscribers
+  const fetchSubscribers = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/newsletter/subscribers`, {
+        headers: getAuthHeaders(),
+      });
+      console.log("✓ Subscribers fetched:", response.data);
+      setSubscribers(response.data);
+    } catch (err) {
+      console.error("Error fetching subscribers:", err);
+    }
+  };
+
+  // Send email to all subscribers
+  const handleSendToAllSubscribers = async () => {
+    if (!emailSubject || !emailContent) {
+      alert("Please fill in subject and content");
+      return;
+    }
+
+    try {
+      setSendingEmail(true);
+      const response = await axios.post(
+        `${API_URL}/api/newsletter/send-to-all`,
+        {
+          subject: emailSubject,
+          htmlContent: emailContent,
+        },
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+
+      console.log("✓ Email sent:", response.data);
+      alert(`Success! ${response.data.subscriberCount} subscribers received the email`);
+      setEmailSubject("");
+      setEmailContent("");
+    } catch (err) {
+      console.error("Error sending email:", err);
+      alert("Failed to send email. Please try again.");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   // Initialize Filestack and fetch data on mount
   useEffect(() => {
     const isAuthenticated = sessionStorage.getItem("admin_authenticated");
@@ -140,6 +191,7 @@ export default function AdminDashboard() {
     fetchMerch();
     fetchProfile();
     fetchMusic();
+    fetchSubscribers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -174,7 +226,9 @@ export default function AdminDashboard() {
       return;
     }
     try {
-      await axios.post(`${API_URL}/api/merch`, formData, { headers: getAuthHeaders() });
+      const response = await axios.post(`${API_URL}/api/merch`, formData, { headers: getAuthHeaders() });
+      const newItem = response.data;
+
       setFormData({
         name: "",
         description: "",
@@ -184,7 +238,37 @@ export default function AdminDashboard() {
         image: "",
       });
       fetchMerch();
-      alert("Item added successfully!");
+
+      // Ask if admin wants to notify subscribers
+      const notifySubscribers = window.confirm(
+        "Merchandise added! Do you want to send a notification to all newsletter subscribers?"
+      );
+
+      if (notifySubscribers && subscribers.length > 0) {
+        try {
+          const notifyResponse = await axios.post(
+            `${API_URL}/api/newsletter/notify-new-merch`,
+            {
+              name: newItem.name,
+              price: newItem.price,
+              category: newItem.category || "merchandise",
+              image: newItem.image,
+            },
+            {
+              headers: getAuthHeaders(),
+            }
+          );
+          console.log("✓ Notification sent:", notifyResponse.data);
+          alert(
+            `Item added successfully!\n\nNotification sent to ${notifyResponse.data.subscriberCount} subscribers about "${newItem.name}"`
+          );
+        } catch (notifyErr) {
+          console.error("Error sending notification:", notifyErr);
+          alert("Item added, but failed to send notification. Please try again.");
+        }
+      } else {
+        alert("Item added successfully!");
+      }
     } catch (err) {
       alert("Error adding item: " + err.message);
     }
@@ -256,7 +340,37 @@ export default function AdminDashboard() {
         platform: "spotify",
         description: "",
       });
-      alert("Music added successfully!");
+
+      // Ask if admin wants to notify subscribers
+      const notifySubscribers = window.confirm(
+        "Music added! Do you want to send a notification to all newsletter subscribers?"
+      );
+
+      if (notifySubscribers && subscribers.length > 0) {
+        try {
+          const notifyResponse = await axios.post(
+            `${API_URL}/api/newsletter/notify-new-music`,
+            {
+              title: response.data.title,
+              artist: response.data.artist || "JayT1017",
+              url: response.data.url,
+              platform: response.data.platform || "spotify",
+            },
+            {
+              headers: getAuthHeaders(),
+            }
+          );
+          console.log("✓ Notification sent:", notifyResponse.data);
+          alert(
+            `Music added successfully!\n\nNotification sent to ${notifyResponse.data.subscriberCount} subscribers about "${response.data.title}"`
+          );
+        } catch (notifyErr) {
+          console.error("Error sending notification:", notifyErr);
+          alert("Music added, but failed to send notification. Please try again.");
+        }
+      } else {
+        alert("Music added successfully!");
+      }
     } catch (err) {
       console.error("Error adding music:", err);
       alert("Failed to add music. Please try again.");
@@ -475,6 +589,7 @@ export default function AdminDashboard() {
             { id: "merch", label: "Merchandise", icon: "🛍️" },
             { id: "music", label: "Music", icon: "🎵" },
             { id: "profile", label: "Profile", icon: "👤" },
+            { id: "newsletter", label: "Newsletter", icon: "📧" },
             { id: "media", label: "Media", icon: "🖼️" },
             { id: "settings", label: "Settings", icon: "⚙️" },
           ].map((tab) => (
@@ -944,6 +1059,98 @@ export default function AdminDashboard() {
                 <li>✓ <strong>Max file size:</strong> 10MB</li>
                 <li>✓ <strong>Storage:</strong> All images stored on Filestack CDN (permanent URLs)</li>
               </ul>
+            </div>
+          </div>
+        )}
+
+        {/* Newsletter Tab */}
+        {activeTab === "newsletter" && (
+          <div>
+            <h2 className="text-3xl font-bold mb-8 gradient-text">Newsletter Management</h2>
+
+            {/* Send Email to All */}
+            <div className={`${darkMode ? 'bg-dark-800 border-dark-700' : 'bg-white border-gray-200'} rounded-lg p-6 border mb-8`}>
+              <h3 className="text-xl font-bold mb-4">📧 Send Email to All Subscribers</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Subject</label>
+                  <input
+                    type="text"
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                    placeholder="Email subject (e.g., 'New Music Release!')"
+                    className={`w-full px-4 py-2 rounded-lg border ${
+                      darkMode
+                        ? 'bg-dark-900 border-dark-700 text-white'
+                        : 'bg-gray-50 border-gray-300 text-black'
+                    } focus:outline-none focus:border-accent-purple`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Message (HTML)</label>
+                  <textarea
+                    value={emailContent}
+                    onChange={(e) => setEmailContent(e.target.value)}
+                    placeholder="Write your email message here... You can use HTML for formatting"
+                    rows={8}
+                    className={`w-full px-4 py-2 rounded-lg border ${
+                      darkMode
+                        ? 'bg-dark-900 border-dark-700 text-white'
+                        : 'bg-gray-50 border-gray-300 text-black'
+                    } focus:outline-none focus:border-accent-purple font-mono text-sm`}
+                  />
+                  <p className="text-xs text-gray-400 mt-2">💡 Tip: Use HTML tags for formatting. Example: &lt;strong&gt;Bold text&lt;/strong&gt;, &lt;a href="url"&gt;Link&lt;/a&gt;</p>
+                </div>
+
+                <button
+                  onClick={handleSendToAllSubscribers}
+                  disabled={sendingEmail || !emailSubject || !emailContent}
+                  className="w-full bg-accent-purple hover:bg-accent-pink disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-lg transition"
+                >
+                  {sendingEmail ? "Sending..." : `Send to ${subscribers.length} Subscribers`}
+                </button>
+              </div>
+            </div>
+
+            {/* Subscribers List */}
+            <div className={`${darkMode ? 'bg-dark-800 border-dark-700' : 'bg-white border-gray-200'} rounded-lg p-6 border`}>
+              <h3 className="text-xl font-bold mb-4">📋 Subscribers ({subscribers.length})</h3>
+
+              {subscribers.length > 0 ? (
+                <div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className={`border-b ${darkMode ? 'border-dark-700' : 'border-gray-300'}`}>
+                        <tr>
+                          <th className="text-left py-3 px-4 font-semibold">Email</th>
+                          <th className="text-left py-3 px-4 font-semibold">Subscribed Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {subscribers.map((sub) => (
+                          <tr key={sub.id} className={`border-b ${darkMode ? 'border-dark-700' : 'border-gray-200'}`}>
+                            <td className="py-3 px-4">{sub.email}</td>
+                            <td className="py-3 px-4 text-gray-400">
+                              {new Date(sub.subscribed_at).toLocaleDateString()} {new Date(sub.subscribed_at).toLocaleTimeString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="mt-4 p-4 bg-dark-900 rounded text-sm text-gray-400">
+                    <strong>Total Subscribers:</strong> {subscribers.length}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  <p className="mb-2">No subscribers yet</p>
+                  <p className="text-sm">Subscribers will appear here when people sign up</p>
+                </div>
+              )}
             </div>
           </div>
         )}
