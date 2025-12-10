@@ -14,6 +14,12 @@ dotenv.config();
 async function ensureTables() {
   try {
     console.log('🔍 Ensuring database tables exist...');
+    console.log(`DATABASE_URL set: ${process.env.DATABASE_URL ? 'Yes' : 'No'}`);
+    console.log(`NODE_ENV: ${process.env.NODE_ENV}`);
+    
+    // Test connection first
+    const testResult = await pool.query('SELECT NOW()');
+    console.log(`✓ Database connection successful`);
 
     // Create admin_profile table if it doesn't exist
     await pool.query(`
@@ -72,6 +78,7 @@ async function ensureTables() {
     console.log('✓ All database tables ready');
   } catch (err) {
     console.error('⚠ Error ensuring tables:', err.message);
+    console.error('  Stack:', err.stack);
     console.error('  Server will continue, but database operations may fail');
   }
 }
