@@ -107,7 +107,7 @@ export default function AdminDashboard() {
   const fetchMusic = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/music`);
-      console.log("✓ Music fetched:", response.data);
+      console.log("✓ Music fetched in AdminDashboard:", response.data);
       setMusicItems(response.data);
     } catch (err) {
       console.error("Error fetching music:", err);

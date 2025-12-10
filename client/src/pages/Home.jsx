@@ -75,6 +75,7 @@ export default function Home() {
     const fetchMusic = async () => {
       try {
         const response = await axios.get(`${API_URL}/api/music`);
+        console.log("✓ Music fetched from API:", response.data);
         setMusicTracks(response.data);
       } catch (err) {
         console.error("Error fetching music:", err);
