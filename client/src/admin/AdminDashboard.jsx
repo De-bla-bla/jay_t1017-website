@@ -133,7 +133,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Send email to all subscribers
+  // bulk email: send to subscribers
   const handleSendToAllSubscribers = async () => {
     if (!emailSubject || !emailContent) {
       alert("Please fill in subject and content");
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
         }
       );
 
-      console.log("✓ Email sent:", response.data);
+      console.log("email sent:", response.data);
       alert(`Success! ${response.data.subscriberCount} subscribers received the email`);
       setEmailSubject("");
       setEmailContent("");
@@ -163,6 +163,29 @@ export default function AdminDashboard() {
       alert(`Failed to send email:\n\n${errorMsg}\n\nCheck browser console for details.`);
     } finally {
       setSendingEmail(false);
+    }
+  };
+
+  // delete a subscriber
+  const handleDeleteSubscriber = async (subscriberId, email) => {
+    if (!window.confirm(`Delete subscriber: ${email}?`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `${API_URL}/api/newsletter/subscribers/${subscriberId}`,
+        { headers: getAuthHeaders() }
+      );
+
+      console.log("subscriber deleted");
+      alert("Subscriber deleted successfully");
+      // refresh list
+      fetchSubscribers();
+    } catch (err) {
+      console.error("Error deleting subscriber:", err);
+      const errorMsg = err.response?.data?.error || err.message || "Failed to delete subscriber";
+      alert(`Failed to delete subscriber:\n\n${errorMsg}`);
     }
   };
 
@@ -1129,6 +1152,7 @@ export default function AdminDashboard() {
                         <tr>
                           <th className="text-left py-3 px-4 font-semibold">Email</th>
                           <th className="text-left py-3 px-4 font-semibold">Subscribed Date</th>
+                          <th className="text-left py-3 px-4 font-semibold">Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1137,6 +1161,14 @@ export default function AdminDashboard() {
                             <td className="py-3 px-4">{sub.email}</td>
                             <td className="py-3 px-4 text-gray-400">
                               {new Date(sub.subscribed_at).toLocaleDateString()} {new Date(sub.subscribed_at).toLocaleTimeString()}
+                            </td>
+                            <td className="py-3 px-4">
+                              <button
+                                onClick={() => handleDeleteSubscriber(sub.id, sub.email)}
+                                className="text-red-500 hover:text-red-700 text-sm font-medium"
+                              >
+                                Delete
+                              </button>
                             </td>
                           </tr>
                         ))}

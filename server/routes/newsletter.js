@@ -342,8 +342,34 @@ router.post("/notify-new-merch", requireAuth, async (req, res) => {
       });
     }
   } catch (err) {
-    console.error("❌ Error in notify-new-merch:", err.message);
+    console.error("error in merch notify:", err.message);
     res.status(500).json({ error: "Failed to send notification: " + err.message });
+  }
+});
+
+// delete a subscriber
+router.delete("/subscribers/:id", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: "Subscriber ID required" });
+    }
+
+    const result = await pool.query(
+      "DELETE FROM newsletter_subscribers WHERE id = $1 RETURNING *",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Subscriber not found" });
+    }
+
+    console.log("subscriber deleted:", result.rows[0].email);
+    res.json({ message: "Subscriber deleted", subscriber: result.rows[0] });
+  } catch (err) {
+    console.error("error deleting subscriber:", err.message);
+    res.status(500).json({ error: "Failed to delete subscriber: " + err.message });
   }
 });
 
