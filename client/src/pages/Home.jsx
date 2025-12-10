@@ -69,6 +69,30 @@ export default function Home() {
     fetchMerch();
   }, []);
 
+  // Newsletter subscription state
+  const [email, setEmail] = useState("");
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email || !email.includes("@")) {
+      alert("Please enter a valid email address");
+      return;
+    }
+
+    setSubscriptionLoading(true);
+    try {
+      const response = await axios.post(`${API_URL}/api/newsletter/subscribe`, { email });
+      setEmail("");
+      alert("✅ Subscription successful! Check your email for confirmation.");
+    } catch (err) {
+      console.error("Subscription error:", err);
+      alert("❌ Subscription failed: " + (err.response?.data?.error || err.message));
+    } finally {
+      setSubscriptionLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-dark-950">
       <Navbar />
@@ -255,14 +279,23 @@ export default function Home() {
           <p className="text-gray-400 mb-8 max-w-2xl mx-auto">
             Get the latest news about my music, merch drops, and exclusive content.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+          <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
             <input
               type="email"
               placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="flex-1 px-4 py-3 bg-dark-800 border border-dark-700 rounded-lg focus:outline-none focus:border-accent-purple transition"
+              disabled={subscriptionLoading}
             />
-            <button className="btn-primary">Subscribe</button>
-          </div>
+            <button 
+              type="submit"
+              disabled={subscriptionLoading}
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {subscriptionLoading ? "Subscribing..." : "Subscribe"}
+            </button>
+          </form>
         </div>
       </section>
 

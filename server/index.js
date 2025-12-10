@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import merchRoutes from "./routes/merch.js";
 import adminRoutes from "./routes/admin.js";
+import newsletterRoutes from "./routes/newsletter.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
@@ -82,6 +83,15 @@ async function ensureTables() {
       );
     `);
 
+    // Create newsletter_subscribers table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     console.log('✓ All database tables ready');
   } catch (err) {
     console.error('⚠ Error ensuring tables:', err.message);
@@ -103,6 +113,7 @@ app.use(express.json());
 // Routes
 app.use("/api/merch", merchRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/newsletter", newsletterRoutes);
 
 // Serve client static files when in production or when build exists
 const __filename = fileURLToPath(import.meta.url);
