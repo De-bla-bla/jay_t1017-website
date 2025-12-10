@@ -109,7 +109,7 @@ router.get("/profile", async (req, res) => {
       id: profile.id,
       artistName: profile.artist_name,
       bio: profile.bio,
-      profileImage: profile.profile_image,
+      profileImage: profile.profile_image || "",
       heroImage: profile.hero_image || "",
       socialLinks: profile.social_links || {},
     });

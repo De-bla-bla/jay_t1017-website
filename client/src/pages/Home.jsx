@@ -12,7 +12,7 @@ const runtime = (typeof window !== 'undefined' && window.__RUNTIME__) || {};
 const API_URL = runtime.VITE_API_URL || import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Home() {
-  const [heroImage, setHeroImage] = useState(null);
+  const [heroImage, setHeroImage] = useState(() => localStorage.getItem("heroImage"));
   const [profile, setProfile] = useState({
     artistName: "JayT1017",
     bio: "Emo Rap Artist from Ghana",
@@ -29,8 +29,10 @@ export default function Home() {
           bio: response.data.bio || "Emo Rap Artist from Ghana",
           profileImage: response.data.profileImage || null,
         });
-        // Set hero image separately
-        setHeroImage(response.data.heroImage || null);
+        // Set hero image from API if available, otherwise keep localStorage fallback
+        if (response.data.heroImage) {
+          setHeroImage(response.data.heroImage);
+        }
       } catch (err) {
         console.error("Error fetching profile:", err);
         // Keep defaults if fetch fails

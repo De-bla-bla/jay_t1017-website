@@ -360,6 +360,8 @@ export default function AdminDashboard() {
           if (result.filesUploaded && result.filesUploaded.length > 0) {
             const fileUrl = result.filesUploaded[0].url;
             setHeroImage(fileUrl);
+            // Also save to localStorage for backwards compatibility
+            localStorage.setItem("heroImage", fileUrl);
             alert("Hero image uploaded successfully! Click 'Save Profile' to persist.");
           }
         }
@@ -823,7 +825,10 @@ export default function AdminDashboard() {
                   </button>
                   {heroImage && (
                     <button
-                      onClick={() => setHeroImage(null)}
+                      onClick={() => {
+                        setHeroImage(null);
+                        localStorage.removeItem("heroImage");
+                      }}
                       className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
                     >
                       Remove
