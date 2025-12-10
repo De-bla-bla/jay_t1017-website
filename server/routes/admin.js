@@ -87,6 +87,7 @@ router.get("/profile", requireAuth, async (req, res) => {
     const result = await pool.query("SELECT * FROM admin_profile LIMIT 1");
     if (result.rows.length === 0) {
       return res.json({
+        id: 1,
         artistName: "JayT1017",
         bio: "Emo Rap Artist from Ghana",
         profileImage: "",
@@ -100,23 +101,18 @@ router.get("/profile", requireAuth, async (req, res) => {
         },
       });
     }
-    res.json(result.rows[0]);
+    // Convert snake_case to camelCase for client
+    const profile = result.rows[0];
+    res.json({
+      id: profile.id,
+      artistName: profile.artist_name,
+      bio: profile.bio,
+      profileImage: profile.profile_image,
+      socialLinks: profile.social_links || {},
+    });
   } catch (err) {
     console.error("Profile fetch error:", err.message);
-    // Return default profile if table doesn't exist
-    res.json({
-      artistName: "JayT1017",
-      bio: "Emo Rap Artist from Ghana",
-      profileImage: "",
-      socialLinks: {
-        instagram: "https://instagram.com/jay_t1017",
-        tiktok: "https://tiktok.com/@jay_t1017",
-        twitter: "https://twitter.com/jayt1017x",
-        facebook: "https://facebook.com/JayT1017",
-        snapchat: "https://snapchat.com/add/jay_t2021395",
-        appleMusic: "https://music.apple.com",
-      },
-    });
+    res.status(500).json({ error: "Failed to fetch profile" });
   }
 });
 
@@ -133,26 +129,28 @@ router.put("/profile", requireAuth, async (req, res) => {
       // Insert if doesn't exist
       result = await pool.query(
         "INSERT INTO admin_profile (id, artist_name, bio, profile_image, social_links) VALUES (1, $1, $2, $3, $4) RETURNING *",
-        [artistName, bio, profileImage, JSON.stringify(socialLinks)]
+        [artistName, bio, profileImage, JSON.stringify(socialLinks || {})]
       );
     } else {
       // Update if exists
       result = await pool.query(
-        "UPDATE admin_profile SET artist_name = $1, bio = $2, profile_image = $3, social_links = $4 WHERE id = 1 RETURNING *",
-        [artistName, bio, profileImage, JSON.stringify(socialLinks)]
+        "UPDATE admin_profile SET artist_name = $1, bio = $2, profile_image = $3, social_links = $4, updated_at = CURRENT_TIMESTAMP WHERE id = 1 RETURNING *",
+        [artistName, bio, profileImage, JSON.stringify(socialLinks || {})]
       );
     }
     
-    res.json(result.rows[0] || { message: "Profile updated" });
+    // Convert snake_case to camelCase
+    const profile = result.rows[0];
+    res.json({
+      id: profile.id,
+      artistName: profile.artist_name,
+      bio: profile.bio,
+      profileImage: profile.profile_image,
+      socialLinks: profile.social_links || {},
+    });
   } catch (err) {
     console.error("Profile update error:", err.message);
-    // Return success anyway (graceful degradation)
-    res.json({
-      artistName: req.body.artistName || "JayT1017",
-      bio: req.body.bio || "Emo Rap Artist from Ghana",
-      profileImage: req.body.profileImage || "",
-      message: "Profile updated (offline mode)"
-    });
+    res.status(500).json({ error: "Failed to update profile: " + err.message });
   }
 });
 

@@ -6,8 +6,78 @@ import adminRoutes from "./routes/admin.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import pool from "./config/database.js";
 
 dotenv.config();
+
+// Ensure database tables exist on startup
+async function ensureTables() {
+  try {
+    console.log('🔍 Ensuring database tables exist...');
+
+    // Create admin_profile table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS admin_profile (
+        id SERIAL PRIMARY KEY,
+        artist_name VARCHAR(255),
+        bio TEXT,
+        profile_image TEXT,
+        social_links JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create merch table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS merch (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        price DECIMAL(10, 2) NOT NULL,
+        original_price DECIMAL(10, 2),
+        category VARCHAR(100),
+        image TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create orders table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        customer_name VARCHAR(255) NOT NULL,
+        customer_phone VARCHAR(20),
+        items JSONB NOT NULL,
+        total DECIMAL(10, 2) NOT NULL,
+        notes TEXT,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Create page_visits table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS page_visits (
+        id SERIAL PRIMARY KEY,
+        page VARCHAR(255),
+        user_agent TEXT,
+        ip_address VARCHAR(45),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    console.log('✓ All database tables ready');
+  } catch (err) {
+    console.error('⚠ Error ensuring tables:', err.message);
+    console.error('  Server will continue, but database operations may fail');
+  }
+}
+
+// Run table initialization
+ensureTables();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
