@@ -8,28 +8,40 @@ const router = express.Router();
 // Configure email transporter using SMTP settings
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "465"),
-  secure: true, // true for 465, false for other ports
+  port: parseInt(process.env.SMTP_PORT || "587"), // Changed from 465 to 587 for better compatibility
+  secure: process.env.SMTP_PORT === "465", // Only use SSL for port 465, TLS for 587
   auth: {
     user: process.env.SMTP_USER || process.env.EMAIL_USER || "your-email@gmail.com",
     pass: process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || "your-app-password",
   },
   logger: true,
   debug: true,
+  connectionTimeout: 10000, // 10 seconds
+  socketTimeout: 10000, // 10 seconds
 });
 
 // Test SMTP connection on startup
 transporter.verify((error, success) => {
   if (error) {
     console.error("⚠️ SMTP Email Configuration Error:", error.message);
-    console.error("Make sure these environment variables are set:");
-    console.error("  - SMTP_HOST");
-    console.error("  - SMTP_PORT");
-    console.error("  - SMTP_USER");
-    console.error("  - SMTP_PASS");
-    console.error("  - EMAIL_FROM or EMAIL_USER");
+    console.error("Troubleshooting tips:");
+    console.error("1. Make sure these environment variables are set:");
+    console.error("   - SMTP_HOST (default: smtp.gmail.com)");
+    console.error("   - SMTP_PORT (587 for Gmail, 465 as fallback)");
+    console.error("   - SMTP_USER (your Gmail address)");
+    console.error("   - SMTP_PASS (Gmail App Password, NOT your regular password)");
+    console.error("   - EMAIL_FROM or EMAIL_USER");
+    console.error("2. If using Gmail, generate an App Password:");
+    console.error("   https://myaccount.google.com/apppasswords");
+    console.error("3. Enable 2-Factor Authentication on your Gmail account");
+    console.error("4. Current config:");
+    console.error("   SMTP_HOST:", process.env.SMTP_HOST || "smtp.gmail.com");
+    console.error("   SMTP_PORT:", process.env.SMTP_PORT || "587");
+    console.error("   SMTP_USER configured:", !!process.env.SMTP_USER);
+    console.error("   SMTP_PASS configured:", !!process.env.SMTP_PASS);
   } else {
     console.log("✓ SMTP Email service configured and ready");
+    console.log("  Using:", process.env.SMTP_HOST || "smtp.gmail.com", ":", process.env.SMTP_PORT || "587");
   }
 });
 
