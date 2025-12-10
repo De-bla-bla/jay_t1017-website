@@ -1,7 +1,6 @@
 import express from "express";
 import pool from "../config/database.js";
 import { requireAuth, signToken } from "../middleware/auth.js";
-import { inMemoryProfile } from "../utils/store.js";
 
 const router = express.Router();
 
@@ -87,12 +86,20 @@ router.get("/profile", requireAuth, async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM admin_profile LIMIT 1");
     if (result.rows.length === 0) {
+      // No profile found yet
       return res.json({
         id: 1,
-        artistName: inMemoryProfile.artist_name,
-        bio: inMemoryProfile.bio,
-        profileImage: inMemoryProfile.profile_image,
-        socialLinks: inMemoryProfile.social_links || {},
+        artistName: "JayT1017",
+        bio: "Emo Rap Artist from Ghana",
+        profileImage: "",
+        socialLinks: {
+          instagram: "https://instagram.com/jay_t1017",
+          tiktok: "https://tiktok.com/@jay_t1017",
+          twitter: "https://twitter.com/jayt1017x",
+          facebook: "https://facebook.com/JayT1017",
+          snapchat: "https://snapchat.com/add/jay_t2021395",
+          appleMusic: "https://music.apple.com",
+        },
       });
     }
     // Convert snake_case to camelCase for client
@@ -106,15 +113,7 @@ router.get("/profile", requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error("Profile fetch error:", err.message);
-    // Use in-memory fallback if database is unavailable
-    console.log("Using in-memory profile fallback");
-    res.json({
-      id: inMemoryProfile.id,
-      artistName: inMemoryProfile.artist_name,
-      bio: inMemoryProfile.bio,
-      profileImage: inMemoryProfile.profile_image,
-      socialLinks: inMemoryProfile.social_links || {},
-    });
+    res.status(500).json({ error: "Failed to fetch profile" });
   }
 });
 
@@ -152,20 +151,7 @@ router.put("/profile", requireAuth, async (req, res) => {
     });
   } catch (err) {
     console.error("Profile update error:", err.message);
-    // Use in-memory fallback if database is unavailable
-    console.log("Using in-memory profile fallback for save");
-    inMemoryProfile.artist_name = req.body.artistName || inMemoryProfile.artist_name;
-    inMemoryProfile.bio = req.body.bio || inMemoryProfile.bio;
-    inMemoryProfile.profile_image = req.body.profileImage || inMemoryProfile.profile_image;
-    inMemoryProfile.social_links = req.body.socialLinks || inMemoryProfile.social_links;
-    
-    res.json({
-      id: inMemoryProfile.id,
-      artistName: inMemoryProfile.artist_name,
-      bio: inMemoryProfile.bio,
-      profileImage: inMemoryProfile.profile_image,
-      socialLinks: inMemoryProfile.social_links || {},
-    });
+    res.status(500).json({ error: "Failed to update profile: " + err.message });
   }
 });
 
