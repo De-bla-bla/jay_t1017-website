@@ -89,6 +89,15 @@ ensureTables();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// In-memory storage for profile if database is unavailable
+let inMemoryProfile = {
+  id: 1,
+  artist_name: "JayT1017",
+  bio: "Emo Rap Artist from Ghana",
+  profile_image: "",
+  social_links: {}
+};
+
 // Middleware
 app.use(cors());
 app.use(express.json());
