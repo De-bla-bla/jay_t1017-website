@@ -21,7 +21,7 @@ async function ensureTables() {
     
     // Test connection first
     const testResult = await pool.query('SELECT NOW()');
-    console.log(`✓ Database connection successful`);
+    console.log(`database connected`);
 
     // Create admin_profile table if it doesn't exist
     await pool.query(`
@@ -107,7 +107,7 @@ async function ensureTables() {
       );
     `);
 
-    console.log('✓ All database tables ready');
+    console.log('all tables ready');
   } catch (err) {
     console.error('⚠ Error ensuring tables:', err.message);
     console.error('  Stack:', err.stack);
@@ -190,7 +190,7 @@ if (process.env.NODE_ENV === "production" || process.env.SERVE_CLIENT === "true"
   });
 }
 
-// Health check
+// basic status
 app.get("/api/health", (req, res) => {
   res.json({ 
     status: "Server is running",
@@ -209,5 +209,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`status endpoint: http://localhost:${PORT}/api/health`);
 });

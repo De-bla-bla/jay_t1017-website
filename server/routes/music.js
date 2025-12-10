@@ -8,7 +8,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM music ORDER BY created_at DESC");
-    console.log("✓ Music tracks fetched:", result.rows.length, "tracks");
+    console.log("got", result.rows.length, "tracks");
     res.json(result.rows);
   } catch (err) {
     console.error("Error fetching music:", err.message);
@@ -46,7 +46,7 @@ router.post("/", requireAuth, async (req, res) => {
         "INSERT INTO music (title, artist, url, platform, description) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         [title, artist || "", url, platform || "spotify", description || ""]
       );
-      console.log("✓ Music track inserted successfully:", result.rows[0]);
+      console.log("track saved:", result.rows[0]);
       return res.status(201).json(result.rows[0]);
     } catch (dbErr) {
       console.error("Database insert failed, creating table:", dbErr.message);
@@ -63,14 +63,14 @@ router.post("/", requireAuth, async (req, res) => {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
-      console.log("✓ Music table created");
+      console.log("music table created");
       
       // Try insert again
       const result = await pool.query(
         "INSERT INTO music (title, artist, url, platform, description) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         [title, artist || "", url, platform || "spotify", description || ""]
       );
-      console.log("✓ Music track inserted after table creation:", result.rows[0]);
+      console.log("track saved:", result.rows[0]);
       return res.status(201).json(result.rows[0]);
     }
   } catch (err) {

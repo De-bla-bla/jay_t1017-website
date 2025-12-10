@@ -5,17 +5,17 @@ import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Configure SendGrid API
+// set up sendgrid
 const sendgridApiKey = process.env.SENDGRID_API_KEY;
 if (sendgridApiKey) {
   sgMail.setApiKey(sendgridApiKey);
-  console.log("✓ SendGrid API email service configured and ready");
+  console.log("SendGrid API ready");
 } else {
-  console.warn("⚠️ SENDGRID_API_KEY not configured. Email notifications will not work.");
-  console.warn("Please set the SENDGRID_API_KEY environment variable.");
+  console.warn("No SendGrid API key — emails won't work");
+  console.warn("Set SENDGRID_API_KEY in your env");
 }
 
-// Health check - verify SendGrid API configuration
+// check sendgrid config
 router.get("/health", (req, res) => {
   const sendgridConfigured = {
     sendgridApiKey: !!process.env.SENDGRID_API_KEY,
@@ -25,7 +25,7 @@ router.get("/health", (req, res) => {
   const allConfigured = Object.values(sendgridConfigured).every((v) => v === true);
 
   res.json({
-    status: allConfigured ? "✓ Email system configured" : "⚠️ Email system NOT fully configured",
+    status: allConfigured ? "Email system ok" : "Email system not ready",
     configuration: sendgridConfigured,
     missingVariables: Object.entries(sendgridConfigured)
       .filter(([_, value]) => !value)
@@ -34,7 +34,7 @@ router.get("/health", (req, res) => {
   });
 });
 
-// Subscribe to newsletter
+// user signs up for newsletter
 router.post("/subscribe", async (req, res) => {
   try {
     const { email } = req.body;
@@ -76,13 +76,13 @@ router.post("/subscribe", async (req, res) => {
       );
     }
 
-    // Send confirmation email via SendGrid
+    // send welcome email
     try {
       if (process.env.SENDGRID_API_KEY) {
         await sgMail.send({
           from: process.env.EMAIL_FROM || "noreply@jayt1017.com",
           to: email,
-          subject: "Welcome to JayT1017 Newsletter! 🎵",
+          subject: "Welcome to JayT1017 Newsletter!",
           html: `
             <h2>Welcome to JayT1017 Newsletter!</h2>
             <p>Hey there! 👋</p>
@@ -99,10 +99,10 @@ router.post("/subscribe", async (req, res) => {
             <p><strong>- JayT1017</strong></p>
           `,
         });
-        console.log("✓ Welcome email sent to:", email);
+        console.log("welcome email sent:", email);
       }
     } catch (emailErr) {
-      console.warn("⚠️ Email sending failed (this is okay if email is not configured):", emailErr.message);
+      console.warn("email didn't send (no problem if sendgrid isn't set up):", emailErr.message);
       // Still return success if database insert worked
     }
 
@@ -113,11 +113,11 @@ router.post("/subscribe", async (req, res) => {
   }
 });
 
-// Get all subscribers (for admin)
+// get list of subscribers
 router.get("/subscribers", requireAuth, async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM newsletter_subscribers ORDER BY subscribed_at DESC");
-    console.log(`✓ Retrieved ${result.rows.length} newsletter subscribers`);
+    console.log(`got ${result.rows.length} subscribers`);
     res.json(result.rows);
   } catch (err) {
     console.error(err);
@@ -125,7 +125,7 @@ router.get("/subscribers", requireAuth, async (req, res) => {
   }
 });
 
-// Send email to all subscribers (for admin)
+// admin sends email to all subscribers
 router.post("/send-to-all", requireAuth, async (req, res) => {
   try {
     const { subject, htmlContent } = req.body;
@@ -135,9 +135,9 @@ router.post("/send-to-all", requireAuth, async (req, res) => {
     }
 
     if (!process.env.SENDGRID_API_KEY) {
-      console.error("❌ SENDGRID_API_KEY is not configured");
+      console.error("no sendgrid key");
       return res.status(503).json({ 
-        error: "Email service not configured. Set SENDGRID_API_KEY environment variable on Railway",
+        error: "Email service not working",
         configured: false 
       });
     }
@@ -170,7 +170,7 @@ router.post("/send-to-all", requireAuth, async (req, res) => {
 
       await Promise.all(promises);
 
-      console.log(`✓ Email sent to ${emails.length} subscribers`);
+      console.log(`sent to ${emails.length} people`);
       res.json({
         message: `Email sent successfully to ${emails.length} subscribers`,
         subscriberCount: emails.length,
@@ -190,7 +190,7 @@ router.post("/send-to-all", requireAuth, async (req, res) => {
   }
 });
 
-// Auto-notify subscribers about new music
+// notify subscribers about new music
 router.post("/notify-new-music", requireAuth, async (req, res) => {
   try {
     const { title, artist, url, platform } = req.body;
@@ -200,14 +200,14 @@ router.post("/notify-new-music", requireAuth, async (req, res) => {
     }
 
     if (!process.env.SENDGRID_API_KEY) {
-      console.error("❌ SENDGRID_API_KEY is not configured");
+      console.error("no sendgrid key");
       return res.status(503).json({ 
-        error: "Email service not configured. Set SENDGRID_API_KEY environment variable",
+        error: "email service not working",
         configured: false 
       });
     }
 
-    // Get all subscribers
+    // get subscriber list
     const subscribersResult = await pool.query(
       "SELECT email FROM newsletter_subscribers ORDER BY email"
     );
@@ -234,10 +234,10 @@ router.post("/notify-new-music", requireAuth, async (req, res) => {
       <p>🔥 Stay tuned for more!</p>
     `;
 
-    // Send notification email via SendGrid
+    // send notification
     try {
       const fromEmail = process.env.EMAIL_FROM || "noreply@jayt1017.com";
-      console.log(`Sending music notification to ${emails.length} subscribers...`);
+      console.log(`notifying ${emails.length} people about the track...`);
       
       const promises = emails.map((email) =>
         sgMail.send({
@@ -250,7 +250,7 @@ router.post("/notify-new-music", requireAuth, async (req, res) => {
 
       await Promise.all(promises);
 
-      console.log(`✓ Music notification sent to ${emails.length} subscribers`);
+      console.log(`notified everyone`);
       res.json({
         message: `Notification sent to ${emails.length} subscribers about "${title}"`,
         subscriberCount: emails.length,
@@ -269,7 +269,7 @@ router.post("/notify-new-music", requireAuth, async (req, res) => {
   }
 });
 
-// Auto-notify subscribers about new merchandise
+// notify subscribers about new merch
 router.post("/notify-new-merch", requireAuth, async (req, res) => {
   try {
     const { name, price, category, image } = req.body;
@@ -279,14 +279,14 @@ router.post("/notify-new-merch", requireAuth, async (req, res) => {
     }
 
     if (!process.env.SENDGRID_API_KEY) {
-      console.error("❌ SENDGRID_API_KEY is not configured");
+      console.error("no sendgrid key");
       return res.status(503).json({ 
-        error: "Email service not configured. Set SENDGRID_API_KEY environment variable",
+        error: "emails aren't working",
         configured: false 
       });
     }
 
-    // Get all subscribers
+    // get subscriber list
     const subscribersResult = await pool.query(
       "SELECT email FROM newsletter_subscribers ORDER BY email"
     );
@@ -312,10 +312,10 @@ router.post("/notify-new-merch", requireAuth, async (req, res) => {
       <p>🔥 Get yours before they're gone!</p>
     `;
 
-    // Send notification email via SendGrid
+    // send it
     try {
       const fromEmail = process.env.EMAIL_FROM || "noreply@jayt1017.com";
-      console.log(`Sending merch notification to ${emails.length} subscribers...`);
+      console.log(`telling ${emails.length} people about new merch...`);
       
       const promises = emails.map((email) =>
         sgMail.send({
@@ -328,7 +328,7 @@ router.post("/notify-new-merch", requireAuth, async (req, res) => {
 
       await Promise.all(promises);
 
-      console.log(`✓ Merch notification sent to ${emails.length} subscribers`);
+      console.log(`everyone notified`);
       res.json({
         message: `Notification sent to ${emails.length} subscribers about "${name}"`,
         subscriberCount: emails.length,

@@ -31,7 +31,7 @@ const poolConfig = connectionString
 
 console.log(`Database config: ${connectionString ? 'Using DATABASE_URL (SSL enabled)' : 'Using individual DB_* env vars'}`);
 if (!connectionString && process.env.NODE_ENV === "production") {
-  console.warn('⚠️  WARNING: DATABASE_URL not set on production. Check Railway env vars!');
+  console.warn('DATABASE_URL not set — check Railway environment variables');
 }
 
 const pool = new Pool(poolConfig);
