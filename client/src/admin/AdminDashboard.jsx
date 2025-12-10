@@ -159,7 +159,8 @@ export default function AdminDashboard() {
       setEmailContent("");
     } catch (err) {
       console.error("Error sending email:", err);
-      alert("Failed to send email. Please try again.");
+      const errorMsg = err.response?.data?.error || err.message || "Failed to send email";
+      alert(`Failed to send email:\n\n${errorMsg}\n\nCheck browser console for details.`);
     } finally {
       setSendingEmail(false);
     }
@@ -264,7 +265,8 @@ export default function AdminDashboard() {
           );
         } catch (notifyErr) {
           console.error("Error sending notification:", notifyErr);
-          alert("Item added, but failed to send notification. Please try again.");
+          const errorMsg = notifyErr.response?.data?.error || notifyErr.message || "Failed to send notification";
+          alert(`Item added, but failed to send notification:\n\n${errorMsg}\n\nCheck browser console for details.`);
         }
       } else {
         alert("Item added successfully!");
@@ -366,7 +368,8 @@ export default function AdminDashboard() {
           );
         } catch (notifyErr) {
           console.error("Error sending notification:", notifyErr);
-          alert("Music added, but failed to send notification. Please try again.");
+          const errorMsg = notifyErr.response?.data?.error || notifyErr.message || "Failed to send notification";
+          alert(`Music added, but failed to send notification:\n\n${errorMsg}\n\nCheck browser console for details.`);
         }
       } else {
         alert("Music added successfully!");
