@@ -5,35 +5,32 @@ import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Configure SendGrid
+// Configure SendGrid API
 const sendgridApiKey = process.env.SENDGRID_API_KEY;
 if (sendgridApiKey) {
   sgMail.setApiKey(sendgridApiKey);
-  console.log("✓ SendGrid email service configured and ready");
+  console.log("✓ SendGrid API email service configured and ready");
 } else {
   console.warn("⚠️ SENDGRID_API_KEY not configured. Email notifications will not work.");
-  console.warn("Set SENDGRID_API_KEY in your Railway environment variables.");
+  console.warn("Please set the SENDGRID_API_KEY environment variable.");
 }
 
-// Health check - verify SMTP configuration
+// Health check - verify SendGrid API configuration
 router.get("/health", (req, res) => {
-  const smtpConfigured = {
-    smtpHost: !!process.env.SMTP_HOST,
-    smtpPort: !!process.env.SMTP_PORT,
-    smtpUser: !!process.env.SMTP_USER,
-    smtpPass: !!process.env.SMTP_PASS,
+  const sendgridConfigured = {
+    sendgridApiKey: !!process.env.SENDGRID_API_KEY,
     emailFrom: !!process.env.EMAIL_FROM,
-    emailUser: !!process.env.EMAIL_USER,
   };
 
-  const allConfigured = Object.values(smtpConfigured).every((v) => v === true);
+  const allConfigured = Object.values(sendgridConfigured).every((v) => v === true);
 
   res.json({
     status: allConfigured ? "✓ Email system configured" : "⚠️ Email system NOT fully configured",
-    configuration: smtpConfigured,
-    missingVariables: Object.entries(smtpConfigured)
+    configuration: sendgridConfigured,
+    missingVariables: Object.entries(sendgridConfigured)
       .filter(([_, value]) => !value)
       .map(([key]) => key),
+    service: "SendGrid API",
   });
 });
 
