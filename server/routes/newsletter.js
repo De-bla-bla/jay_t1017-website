@@ -4,12 +4,14 @@ import nodemailer from "nodemailer";
 
 const router = express.Router();
 
-// Configure email transporter
+// Configure email transporter using SMTP settings
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: parseInt(process.env.SMTP_PORT || "465"),
+  secure: true, // true for 465, false for other ports
   auth: {
-    user: process.env.EMAIL_USER || "your-email@gmail.com",
-    pass: process.env.EMAIL_PASSWORD || "your-app-password",
+    user: process.env.SMTP_USER || process.env.EMAIL_USER || "your-email@gmail.com",
+    pass: process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || "your-app-password",
   },
 });
 
@@ -58,7 +60,7 @@ router.post("/subscribe", async (req, res) => {
     // Send confirmation email
     try {
       await transporter.sendMail({
-        from: process.env.EMAIL_USER || "noreply@jayt1017.com",
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com",
         to: email,
         subject: "Welcome to JayT1017 Newsletter! 🎵",
         html: `
