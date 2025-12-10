@@ -4,14 +4,15 @@ import { LogOut, Settings, ShoppingBag, Music, Edit2, Trash2, Plus, Upload } fro
 import axios from "axios";
 import * as filestack from "filestack-js";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-const FILESTACK_API_KEY = import.meta.env.VITE_FILESTACK_API_KEY;
+const runtime = (typeof window !== 'undefined' && window.__RUNTIME__) || {};
+const API_URL = runtime.VITE_API_URL || import.meta.env.VITE_API_URL || "http://localhost:5000";
+const FILESTACK_API_KEY = runtime.VITE_FILESTACK_API_KEY || import.meta.env.VITE_FILESTACK_API_KEY || "";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   const [filestackClient, setFilestackClient] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
     totalOrders: 0,
     totalRevenue: 0,
@@ -48,17 +49,18 @@ export default function AdminDashboard() {
       return;
     }
     
-    // Initialize Filestack client
-    if (FILESTACK_API_KEY) {
+    // Initialize Filestack client. We support runtime-injected config via window.__RUNTIME__
+    const key = (typeof window !== 'undefined' && window.__RUNTIME__ && window.__RUNTIME__.VITE_FILESTACK_API_KEY) || FILESTACK_API_KEY;
+    if (key) {
       try {
-        const client = filestack.init(FILESTACK_API_KEY);
+        const client = filestack.init(key);
         console.log("✓ Filestack client initialized");
         setFilestackClient(client);
       } catch (err) {
         console.error("Failed to initialize Filestack:", err);
       }
     } else {
-      console.warn("VITE_FILESTACK_API_KEY is not set");
+      console.warn("Filestack API key is not set. To configure, add VITE_FILESTACK_API_KEY as a Railway variable or set it in your local .env.");
     }
     
     fetchStats();

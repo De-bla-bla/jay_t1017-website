@@ -35,7 +35,28 @@ if (process.env.NODE_ENV === "production" || process.env.SERVE_CLIENT === "true"
     if (req.path.startsWith('/api')) return next();
     const indexPath = path.join(clientDist, 'index.html');
     if (fs.existsSync(indexPath)) {
-      return res.sendFile(indexPath);
+      try {
+        // Read index.html and inject runtime config so client can pick up secrets at runtime
+        let indexHtml = fs.readFileSync(indexPath, 'utf8');
+        const runtimeConfig = {
+          VITE_FILESTACK_API_KEY: process.env.VITE_FILESTACK_API_KEY || process.env.FILESTACK_API_KEY || '',
+          VITE_API_URL: process.env.VITE_API_URL || '',
+        };
+        const injectScript = `\n<script>window.__RUNTIME__ = ${JSON.stringify(runtimeConfig)};</script>\n`;
+        // Inject before closing </head> if present, otherwise before </body>
+        if (indexHtml.includes('</head>')) {
+          indexHtml = indexHtml.replace('</head>', `${injectScript}</head>`);
+        } else if (indexHtml.includes('</body>')) {
+          indexHtml = indexHtml.replace('</body>', `${injectScript}</body>`);
+        } else {
+          indexHtml = injectScript + indexHtml;
+        }
+        res.set('Content-Type', 'text/html');
+        return res.send(indexHtml);
+      } catch (err) {
+        console.error('Error injecting runtime config into index.html', err);
+        return res.sendFile(indexPath);
+      }
     }
     return next();
   });
