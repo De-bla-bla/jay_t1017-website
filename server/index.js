@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import merchRoutes from "./routes/merch.js";
 import adminRoutes from "./routes/admin.js";
+import musicRoutes from "./routes/music.js";
 import newsletterRoutes from "./routes/newsletter.js";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -92,6 +93,20 @@ async function ensureTables() {
       );
     `);
 
+    // Create music table if it doesn't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS music (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        artist VARCHAR(255),
+        url TEXT NOT NULL,
+        platform VARCHAR(50),
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     console.log('✓ All database tables ready');
   } catch (err) {
     console.error('⚠ Error ensuring tables:', err.message);
@@ -113,6 +128,7 @@ app.use(express.json());
 // Routes
 app.use("/api/merch", merchRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/music", musicRoutes);
 app.use("/api/newsletter", newsletterRoutes);
 
 // Serve client static files when in production or when build exists

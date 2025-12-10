@@ -103,6 +103,17 @@ export default function AdminDashboard() {
     }
   };
 
+  // Fetch music tracks
+  const fetchMusic = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/music`);
+      console.log("✓ Music fetched:", response.data);
+      setMusicItems(response.data);
+    } catch (err) {
+      console.error("Error fetching music:", err);
+    }
+  };
+
   // Initialize Filestack and fetch data on mount
   useEffect(() => {
     const isAuthenticated = sessionStorage.getItem("admin_authenticated");
@@ -128,7 +139,9 @@ export default function AdminDashboard() {
     fetchStats();
     fetchMerch();
     fetchProfile();
-  }, [navigate]);
+    fetchMusic();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Save admin profile
   const handleSaveProfile = async () => {
@@ -225,50 +238,73 @@ export default function AdminDashboard() {
   };
 
   // Add new music track
-  const handleAddMusic = () => {
+  const handleAddMusic = async () => {
     if (!musicFormData.title || !musicFormData.url) {
       alert("Please fill in title and URL");
       return;
     }
-    const newMusic = {
-      id: Date.now(),
-      ...musicFormData,
-    };
-    setMusicItems([...musicItems, newMusic]);
-    setMusicFormData({
-      title: "",
-      artist: "",
-      url: "",
-      platform: "spotify",
-      description: "",
-    });
-    alert("Music added successfully!");
+    try {
+      const response = await axios.post(`${API_URL}/api/music`, musicFormData, {
+        headers: getAuthHeaders(),
+      });
+      console.log("✓ Music added:", response.data);
+      setMusicItems([...musicItems, response.data]);
+      setMusicFormData({
+        title: "",
+        artist: "",
+        url: "",
+        platform: "spotify",
+        description: "",
+      });
+      alert("Music added successfully!");
+    } catch (err) {
+      console.error("Error adding music:", err);
+      alert("Failed to add music. Please try again.");
+    }
   };
 
   // Update music track
-  const handleUpdateMusic = () => {
+  const handleUpdateMusic = async () => {
     if (!editingMusic) return;
-    setMusicItems(
-      musicItems.map((item) =>
-        item.id === editingMusic.id ? { ...editingMusic, ...musicFormData } : item
-      )
-    );
-    setEditingMusic(null);
-    setMusicFormData({
-      title: "",
-      artist: "",
-      url: "",
-      platform: "spotify",
-      description: "",
-    });
-    alert("Music updated successfully!");
+    try {
+      const response = await axios.put(`${API_URL}/api/music/${editingMusic.id}`, musicFormData, {
+        headers: getAuthHeaders(),
+      });
+      console.log("✓ Music updated:", response.data);
+      setMusicItems(
+        musicItems.map((item) =>
+          item.id === editingMusic.id ? response.data : item
+        )
+      );
+      setEditingMusic(null);
+      setMusicFormData({
+        title: "",
+        artist: "",
+        url: "",
+        platform: "spotify",
+        description: "",
+      });
+      alert("Music updated successfully!");
+    } catch (err) {
+      console.error("Error updating music:", err);
+      alert("Failed to update music. Please try again.");
+    }
   };
 
   // Delete music track
-  const handleDeleteMusic = (id) => {
+  const handleDeleteMusic = async (id) => {
     if (confirm("Delete this track?")) {
-      setMusicItems(musicItems.filter((item) => item.id !== id));
-      alert("Track deleted!");
+      try {
+        await axios.delete(`${API_URL}/api/music/${id}`, {
+          headers: getAuthHeaders(),
+        });
+        console.log("✓ Music deleted");
+        setMusicItems(musicItems.filter((item) => item.id !== id));
+        alert("Track deleted!");
+      } catch (err) {
+        console.error("Error deleting music:", err);
+        alert("Failed to delete music. Please try again.");
+      }
     }
   };
 

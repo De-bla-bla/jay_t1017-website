@@ -43,6 +43,7 @@ export default function Home() {
   }, []);
   
   const [merch, setMerch] = useState([]);
+  const [musicTracks, setMusicTracks] = useState([]);
 
   // Fetch merch items from API
   useEffect(() => {
@@ -67,6 +68,21 @@ export default function Home() {
     };
     
     fetchMerch();
+  }, []);
+
+  // Fetch music tracks from API
+  useEffect(() => {
+    const fetchMusic = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/music`);
+        setMusicTracks(response.data);
+      } catch (err) {
+        console.error("Error fetching music:", err);
+        // Keep empty array if fetch fails
+      }
+    };
+
+    fetchMusic();
   }, []);
 
   // Newsletter subscription state
@@ -233,23 +249,44 @@ export default function Home() {
             Stream my latest tracks across all platforms. Listen to my emo rap releases and get inspired.
           </p>
 
-          {/* Placeholder for music content - admin will manage this */}
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-dark-800 rounded-lg p-8 border border-dark-700 flex items-center justify-center h-64">
-              <div className="text-center">
-                <Music size={48} className="mx-auto mb-4 text-accent-purple" />
-                <p className="text-gray-400">Music content coming soon...</p>
-                <p className="text-sm text-gray-500 mt-2">Admin can manage music section</p>
+          {/* Music Tracks */}
+          {musicTracks.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {musicTracks.map((track) => (
+                <div key={track.id} className="bg-dark-800 rounded-lg p-6 border border-dark-700 hover:border-accent-purple/50 transition">
+                  <h3 className="text-lg font-bold mb-2">{track.title}</h3>
+                  {track.artist && <p className="text-gray-400 mb-3">{track.artist}</p>}
+                  {track.description && <p className="text-gray-400 text-sm mb-4">{track.description}</p>}
+                  <a
+                    href={track.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-accent-purple hover:bg-accent-pink text-white rounded-lg transition"
+                  >
+                    <Music size={16} />
+                    Listen on {track.platform}
+                  </a>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="bg-dark-800 rounded-lg p-8 border border-dark-700 flex items-center justify-center h-64">
+                <div className="text-center">
+                  <Music size={48} className="mx-auto mb-4 text-accent-purple" />
+                  <p className="text-gray-400">Music content coming soon...</p>
+                  <p className="text-sm text-gray-500 mt-2">Admin can manage music section</p>
+                </div>
+              </div>
+              <div className="bg-dark-800 rounded-lg p-8 border border-dark-700 flex items-center justify-center h-64">
+                <div className="text-center">
+                  <Music size={48} className="mx-auto mb-4 text-accent-pink" />
+                  <p className="text-gray-400">Featured Playlist</p>
+                  <p className="text-sm text-gray-500 mt-2">Check my social media for latest releases</p>
+                </div>
               </div>
             </div>
-            <div className="bg-dark-800 rounded-lg p-8 border border-dark-700 flex items-center justify-center h-64">
-              <div className="text-center">
-                <Music size={48} className="mx-auto mb-4 text-accent-pink" />
-                <p className="text-gray-400">Featured Playlist</p>
-                <p className="text-sm text-gray-500 mt-2">Check my social media for latest releases</p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 
