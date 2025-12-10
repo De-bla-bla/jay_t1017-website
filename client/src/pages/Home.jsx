@@ -42,44 +42,32 @@ export default function Home() {
     fetchProfile();
   }, []);
   
-  const [merch] = useState([
-    {
-      id: 1,
-      name: "Emo Hoodie - Black",
-      description: "Classic black hoodie with JayT1017 branding",
-      price: 85.00,
-      originalPrice: 100.00,
-      category: "Hoodie",
-      image: "https://via.placeholder.com/400x500?text=Emo+Hoodie",
-    },
-    {
-      id: 2,
-      name: "Vintage T-Shirt - Purple",
-      description: "Premium cotton tee with gradient logo",
-      price: 35.00,
-      originalPrice: 45.00,
-      category: "T-Shirt",
-      image: "https://via.placeholder.com/400x500?text=Vintage+Tee",
-    },
-    {
-      id: 3,
-      name: "Cap - Black",
-      description: "Adjustable cap with embroidered logo",
-      price: 25.00,
-      originalPrice: 30.00,
-      category: "Cap",
-      image: "https://via.placeholder.com/400x500?text=Black+Cap",
-    },
-    {
-      id: 4,
-      name: "Oversized Tee - White",
-      description: "Oversized fit with artistic print",
-      price: 40.00,
-      originalPrice: 50.00,
-      category: "T-Shirt",
-      image: "https://via.placeholder.com/400x500?text=Oversized+Tee",
-    },
-  ]);
+  const [merch, setMerch] = useState([]);
+
+  // Fetch merch items from API
+  useEffect(() => {
+    const fetchMerch = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/merch`);
+        // Normalize the data from snake_case to camelCase
+        const normalizedMerch = response.data.map(item => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          price: parseFloat(item.price),
+          originalPrice: item.original_price ? parseFloat(item.original_price) : item.price,
+          category: item.category,
+          image: item.image,
+        }));
+        setMerch(normalizedMerch);
+      } catch (err) {
+        console.error("Error fetching merch:", err);
+        // Keep empty array if fetch fails
+      }
+    };
+    
+    fetchMerch();
+  }, []);
 
   return (
     <div className="min-h-screen bg-dark-950">

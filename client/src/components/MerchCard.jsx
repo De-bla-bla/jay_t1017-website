@@ -47,7 +47,7 @@ export default function MerchCard({ item }) {
           <span className="text-2xl font-bold text-accent-purple">
             GHS {item.price.toFixed(2)}
           </span>
-          {item.originalPrice > item.price && (
+          {item.originalPrice && item.originalPrice > item.price && (
             <span className="text-sm text-gray-500 line-through">
               GHS {item.originalPrice.toFixed(2)}
             </span>
