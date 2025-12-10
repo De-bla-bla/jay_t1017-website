@@ -27,35 +27,46 @@ const clientDist = path.join(__dirname, "..", "client", "dist");
 
 // Serve client if built (client/dist) or when explicitly requested
 if (process.env.NODE_ENV === "production" || process.env.SERVE_CLIENT === "true" || fs.existsSync(clientDist)) {
-  app.use(express.static(clientDist));
-
-  // SPA fallback for non-API requests (use middleware instead of route to avoid path-to-regexp issues)
-  app.use((req, res, next) => {
-    if (req.method !== 'GET') return next();
-    if (req.path.startsWith('/api')) return next();
+  // Intercept index.html requests to inject runtime config BEFORE express.static serves it
+  app.get('/', (req, res) => {
     const indexPath = path.join(clientDist, 'index.html');
     if (fs.existsSync(indexPath)) {
       try {
-        // Read index.html and inject runtime config so client can pick up secrets at runtime
         let indexHtml = fs.readFileSync(indexPath, 'utf8');
         const runtimeConfig = {
           VITE_FILESTACK_API_KEY: process.env.VITE_FILESTACK_API_KEY || '',
           VITE_API_URL: process.env.VITE_API_URL || '',
         };
         const injectScript = `<script>window.__RUNTIME__=${JSON.stringify(runtimeConfig)};</script>`;
-        
-        // Always inject before </head> (most reliable)
-        const headClosing = '</head>';
-        if (indexHtml.includes(headClosing)) {
-          indexHtml = indexHtml.replace(headClosing, injectScript + headClosing);
-        } else {
-          // Fallback: inject at end of body
-          const bodyClosing = '</body>';
-          if (indexHtml.includes(bodyClosing)) {
-            indexHtml = indexHtml.replace(bodyClosing, injectScript + bodyClosing);
-          }
-        }
-        
+        indexHtml = indexHtml.replace('</head>', injectScript + '</head>');
+        res.set('Content-Type', 'text/html; charset=utf-8');
+        return res.send(indexHtml);
+      } catch (err) {
+        console.error('Error injecting runtime config:', err);
+        res.set('Content-Type', 'text/html; charset=utf-8');
+        return res.sendFile(indexPath);
+      }
+    }
+    res.status(404).send('Not found');
+  });
+
+  // Serve other static files
+  app.use(express.static(clientDist));
+
+  // SPA fallback for non-API requests (handle client-side routes)
+  app.use((req, res, next) => {
+    if (req.method !== 'GET') return next();
+    if (req.path.startsWith('/api')) return next();
+    const indexPath = path.join(clientDist, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      try {
+        let indexHtml = fs.readFileSync(indexPath, 'utf8');
+        const runtimeConfig = {
+          VITE_FILESTACK_API_KEY: process.env.VITE_FILESTACK_API_KEY || '',
+          VITE_API_URL: process.env.VITE_API_URL || '',
+        };
+        const injectScript = `<script>window.__RUNTIME__=${JSON.stringify(runtimeConfig)};</script>`;
+        indexHtml = indexHtml.replace('</head>', injectScript + '</head>');
         res.set('Content-Type', 'text/html; charset=utf-8');
         return res.send(indexHtml);
       } catch (err) {
