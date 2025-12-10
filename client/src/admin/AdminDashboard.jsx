@@ -929,11 +929,6 @@ export default function AdminDashboard() {
                 />
               </div>
               <hr className="border-dark-700" />
-              <div className="bg-blue-900/20 border border-blue-700/30 rounded p-4">
-                <p className="text-sm text-blue-200">
-                  <strong>Note:</strong> Dark mode is the only theme currently available. Light mode support coming soon!
-                </p>
-              </div>
               <button className="btn-primary mt-6 w-full">Save Settings</button>
             </div>
           </div>
