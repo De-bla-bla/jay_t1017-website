@@ -1,18 +1,23 @@
 import express from "express";
 import pool from "../config/database.js";
+import { requireAuth, signToken } from "../middleware/auth.js";
 
 const router = express.Router();
+
+// Admin credentials from env or hardcoded
+const ADMIN_USERNAME = process.env.ADMIN_USER || "JayT1017";
+const ADMIN_PASSWORD = process.env.ADMIN_PASS || "Ametepe1920@";
 
 // Admin login
 router.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Hardcoded credentials for now (use env vars in production)
-    if (username === "JayT1017" && password === "Ametepe1920@") {
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      const token = signToken({ admin: true, username }, { expiresIn: '24h' });
       res.json({
         success: true,
-        token: "admin_token_" + Date.now(),
+        token,
         message: "Login successful",
       });
     } else {
@@ -24,8 +29,8 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Get dashboard stats
-router.get("/stats", async (req, res) => {
+// Get dashboard stats (requires auth)
+router.get("/stats", requireAuth, async (req, res) => {
   try {
     const merchCount = await pool.query("SELECT COUNT(*) FROM merch");
     const ordersCount = await pool.query("SELECT COUNT(*) FROM orders");
@@ -50,8 +55,8 @@ router.get("/stats", async (req, res) => {
   }
 });
 
-// Get all orders
-router.get("/orders", async (req, res) => {
+// Get all orders (requires auth)
+router.get("/orders", requireAuth, async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM orders ORDER BY created_at DESC LIMIT 20");
     res.json(result.rows);
@@ -61,8 +66,8 @@ router.get("/orders", async (req, res) => {
   }
 });
 
-// Create order
-router.post("/orders", async (req, res) => {
+// Create order (requires auth)
+router.post("/orders", requireAuth, async (req, res) => {
   try {
     const { customerName, customerPhone, items, total, notes } = req.body;
     const result = await pool.query(
@@ -76,8 +81,8 @@ router.post("/orders", async (req, res) => {
   }
 });
 
-// Get admin profile
-router.get("/profile", async (req, res) => {
+// Get admin profile (requires auth)
+router.get("/profile", requireAuth, async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM admin_profile LIMIT 1");
     if (result.rows.length === 0) {
@@ -102,8 +107,8 @@ router.get("/profile", async (req, res) => {
   }
 });
 
-// Update admin profile
-router.put("/profile", async (req, res) => {
+// Update admin profile (requires auth)
+router.put("/profile", requireAuth, async (req, res) => {
   try {
     const { artistName, bio, profileImage, socialLinks } = req.body;
     const result = await pool.query(

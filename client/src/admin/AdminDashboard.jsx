@@ -67,11 +67,17 @@ export default function AdminDashboard() {
     fetchMerch();
   }, [navigate]);
 
+  // Get JWT token from sessionStorage
+  const getAuthHeaders = () => {
+    const token = sessionStorage.getItem("admin_token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   // Fetch dashboard stats
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/admin/stats`);
+      const response = await axios.get(`${API_URL}/api/admin/stats`, { headers: getAuthHeaders() });
       setStats(response.data);
     } catch (err) {
       console.error("Error fetching stats:", err);
@@ -98,7 +104,7 @@ export default function AdminDashboard() {
       return;
     }
     try {
-      await axios.post(`${API_URL}/api/merch`, formData);
+      await axios.post(`${API_URL}/api/merch`, formData, { headers: getAuthHeaders() });
       setFormData({
         name: "",
         description: "",
@@ -118,7 +124,7 @@ export default function AdminDashboard() {
   const handleUpdateItem = async () => {
     if (!editingItem) return;
     try {
-      await axios.put(`${API_URL}/api/merch/${editingItem.id}`, formData);
+      await axios.put(`${API_URL}/api/merch/${editingItem.id}`, formData, { headers: getAuthHeaders() });
       setEditingItem(null);
       setFormData({
         name: "",
@@ -139,7 +145,7 @@ export default function AdminDashboard() {
   const handleDeleteItem = async (id) => {
     if (confirm("Are you sure you want to delete this item?")) {
       try {
-        await axios.delete(`${API_URL}/api/merch/${id}`);
+        await axios.delete(`${API_URL}/api/merch/${id}`, { headers: getAuthHeaders() });
         fetchMerch();
         alert("Item deleted successfully!");
       } catch (err) {
@@ -315,6 +321,7 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     sessionStorage.removeItem("admin_authenticated");
+    sessionStorage.removeItem("admin_token");
     navigate("/admin");
   };
 

@@ -1,5 +1,6 @@
 import express from "express";
 import pool from "../config/database.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -78,8 +79,8 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Create merch item
-router.post("/", async (req, res) => {
+// Create merch item (requires auth)
+router.post("/", requireAuth, async (req, res) => {
   try {
     const { name, description, price, originalPrice, category, image } = req.body;
     
@@ -110,8 +111,8 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Update merch item
-router.put("/:id", async (req, res) => {
+// Update merch item (requires auth)
+router.put("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, price, originalPrice, category, image } = req.body;
@@ -152,8 +153,8 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// Delete merch item
-router.delete("/:id", async (req, res) => {
+// Delete merch item (requires auth)
+router.delete("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     

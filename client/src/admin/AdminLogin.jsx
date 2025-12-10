@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn } from "lucide-react";
+import axios from "axios";
 
 export default function AdminLogin() {
   const [username, setUsername] = useState("");
@@ -9,26 +10,34 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const ADMIN_USERNAME = "JayT1017";
-  const ADMIN_PASSWORD = "Ametepe1920@";
+  const API_URL = (typeof window !== 'undefined' && window.__RUNTIME__ && window.__RUNTIME__.VITE_API_URL) || "http://localhost:5000";
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    setTimeout(() => {
-      if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-        // Set session
+    try {
+      const response = await axios.post(`${API_URL}/api/admin/login`, {
+        username,
+        password,
+      });
+
+      if (response.data.success && response.data.token) {
+        // Store token in sessionStorage
+        sessionStorage.setItem("admin_token", response.data.token);
         sessionStorage.setItem("admin_authenticated", "true");
         sessionStorage.setItem("admin_login_time", new Date().getTime());
         navigate("/admin/dashboard");
       } else {
-        setError("Invalid username or password");
-        setPassword("");
+        setError("Login failed: Invalid response");
       }
+    } catch (err) {
+      setError(err.response?.data?.error || "Login failed. Please try again.");
+      setPassword("");
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
