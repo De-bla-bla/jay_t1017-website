@@ -111,10 +111,25 @@ router.get("/profile", requireAuth, async (req, res) => {
 router.put("/profile", requireAuth, async (req, res) => {
   try {
     const { artistName, bio, profileImage, socialLinks } = req.body;
-    const result = await pool.query(
-      "UPDATE admin_profile SET artist_name = $1, bio = $2, profile_image = $3, social_links = $4 WHERE id = 1 RETURNING *",
-      [artistName, bio, profileImage, JSON.stringify(socialLinks)]
-    );
+    
+    // Check if profile exists
+    const checkResult = await pool.query("SELECT id FROM admin_profile WHERE id = 1");
+    
+    let result;
+    if (checkResult.rows.length === 0) {
+      // Insert if doesn't exist
+      result = await pool.query(
+        "INSERT INTO admin_profile (id, artist_name, bio, profile_image, social_links) VALUES (1, $1, $2, $3, $4) RETURNING *",
+        [artistName, bio, profileImage, JSON.stringify(socialLinks)]
+      );
+    } else {
+      // Update if exists
+      result = await pool.query(
+        "UPDATE admin_profile SET artist_name = $1, bio = $2, profile_image = $3, social_links = $4 WHERE id = 1 RETURNING *",
+        [artistName, bio, profileImage, JSON.stringify(socialLinks)]
+      );
+    }
+    
     res.json(result.rows[0] || { message: "Profile updated" });
   } catch (err) {
     console.error(err);
