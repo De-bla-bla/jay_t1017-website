@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, Settings, ShoppingBag, Music, Edit2, Trash2, Plus, Upload } from "lucide-react";
+import { LogOut, Settings, ShoppingBag, Music, Edit2, Trash2, Plus, Upload, Menu, X } from "lucide-react";
 import axios from "axios";
 import * as filestack from "filestack-js";
 
@@ -11,6 +11,7 @@ const FILESTACK_API_KEY = runtime.VITE_FILESTACK_API_KEY || import.meta.env.VITE
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  const [isOpen, setIsOpen] = useState(false); // Mobile menu state
   const [filestackClient, setFilestackClient] = useState(null);
   const [_loading, setLoading] = useState(false);
   const [stats, setStats] = useState({
@@ -381,10 +382,23 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-dark-950 text-white">
-      {/* Sidebar */}
-      <div className="fixed left-0 top-0 w-64 h-screen bg-dark-900 border-r border-dark-700 flex flex-col">
+      {/* Mobile Menu Toggle */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-dark-900 border-b border-dark-700 flex items-center justify-between px-4 z-50">
+        <h1 className="font-bold gradient-text">JayT1017 Admin</h1>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="text-white"
+        >
+          {isOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {/* Sidebar - Mobile Overlay + Desktop Fixed */}
+      <div className={`fixed left-0 top-0 w-64 h-screen bg-dark-900 border-r border-dark-700 flex flex-col z-40 transition-transform duration-300 ${
+        isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      } md:translate-x-0`}>
         {/* Logo */}
-        <div className="p-6 border-b border-dark-700">
+        <div className="p-6 border-b border-dark-700 mt-16 md:mt-0">
           <div className="flex items-center gap-3">
             {profileImage ? (
               <img
@@ -416,7 +430,10 @@ export default function AdminDashboard() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setIsOpen(false); // Close sidebar on mobile after selecting
+              }}
               className={`w-full text-left px-4 py-2 rounded-lg transition ${
                 activeTab === tab.id
                   ? "bg-accent-purple text-white"
@@ -440,8 +457,16 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Backdrop for mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 md:hidden z-30"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
       {/* Main Content */}
-      <div className="ml-64 p-8">
+      <div className="md:ml-64 pt-20 md:pt-0 p-4 md:p-8">
         {/* Overview Tab */}
         {activeTab === "overview" && (
           <div>
