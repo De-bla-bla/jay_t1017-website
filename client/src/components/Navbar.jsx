@@ -1,13 +1,33 @@
 // src/components/Navbar.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
+import axios from "axios";
+
+const runtime = (typeof window !== 'undefined' && window.__RUNTIME__) || {};
+const API_URL = runtime.VITE_API_URL || import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState(null);
   const { cart } = useCart();
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Fetch profile image on mount
+  useEffect(() => {
+    const fetchProfileImage = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/admin/profile`);
+        if (response.data.profileImage) {
+          setProfileImage(response.data.profileImage);
+        }
+      } catch (err) {
+        console.error("Error fetching profile image:", err);
+      }
+    };
+    fetchProfileImage();
+  }, []);
 
   return (
     <nav className="bg-dark-900 border-b border-dark-700 sticky top-0 z-40">
@@ -15,8 +35,12 @@ export default function Navbar() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-r from-accent-purple to-accent-pink rounded-lg flex items-center justify-center font-bold">
-              JT
+            <div className="w-10 h-10 bg-gradient-to-r from-accent-purple to-accent-pink rounded-lg flex items-center justify-center font-bold overflow-hidden">
+              {profileImage ? (
+                <img src={profileImage} alt="JT" className="w-full h-full object-cover" />
+              ) : (
+                <span>JT</span>
+              )}
             </div>
             <span className="text-xl font-bold gradient-text">JayT1017</span>
           </Link>
