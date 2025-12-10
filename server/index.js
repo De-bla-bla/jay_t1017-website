@@ -68,7 +68,13 @@ if (process.env.NODE_ENV === "production" || process.env.SERVE_CLIENT === "true"
 
 // Health check
 app.get("/api/health", (req, res) => {
-  res.json({ status: "Server is running" });
+  res.json({ 
+    status: "Server is running",
+    runtimeConfig: {
+      hasFilestackKey: !!process.env.VITE_FILESTACK_API_KEY,
+      hasApiUrl: !!process.env.VITE_API_URL,
+    }
+  });
 });
 
 // Error handling
