@@ -42,23 +42,25 @@ if (process.env.NODE_ENV === "production" || process.env.SERVE_CLIENT === "true"
           VITE_FILESTACK_API_KEY: process.env.VITE_FILESTACK_API_KEY || '',
           VITE_API_URL: process.env.VITE_API_URL || '',
         };
-        console.log('Injecting runtime config:', { 
-          hasFilestackKey: !!process.env.VITE_FILESTACK_API_KEY,
-          hasApiUrl: !!process.env.VITE_API_URL 
-        });
-        const injectScript = `<script>window.__RUNTIME__ = ${JSON.stringify(runtimeConfig)};</script>`;
-        // Inject before closing </head> if present, otherwise before </body>
-        if (indexHtml.includes('</head>')) {
-          indexHtml = indexHtml.replace('</head>', `${injectScript}</head>`);
-        } else if (indexHtml.includes('</body>')) {
-          indexHtml = indexHtml.replace('</body>', `${injectScript}</body>`);
+        const injectScript = `<script>window.__RUNTIME__=${JSON.stringify(runtimeConfig)};</script>`;
+        
+        // Always inject before </head> (most reliable)
+        const headClosing = '</head>';
+        if (indexHtml.includes(headClosing)) {
+          indexHtml = indexHtml.replace(headClosing, injectScript + headClosing);
         } else {
-          indexHtml = injectScript + indexHtml;
+          // Fallback: inject at end of body
+          const bodyClosing = '</body>';
+          if (indexHtml.includes(bodyClosing)) {
+            indexHtml = indexHtml.replace(bodyClosing, injectScript + bodyClosing);
+          }
         }
-        res.set('Content-Type', 'text/html');
+        
+        res.set('Content-Type', 'text/html; charset=utf-8');
         return res.send(indexHtml);
       } catch (err) {
-        console.error('Error injecting runtime config into index.html', err);
+        console.error('Error injecting runtime config:', err);
+        res.set('Content-Type', 'text/html; charset=utf-8');
         return res.sendFile(indexPath);
       }
     }
