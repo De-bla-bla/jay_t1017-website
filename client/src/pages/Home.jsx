@@ -179,7 +179,7 @@ export default function Home() {
           <div className="relative hidden md:block">
             <div className="w-full aspect-square bg-gradient-to-br from-accent-purple/30 to-accent-pink/30 rounded-2xl overflow-hidden border-2 border-accent-purple/50">
               <img
-                src={heroImage || "https://via.placeholder.com/600x600?text=JayT1017+Profile"}
+                src={profile.profileImage || heroImage || "https://via.placeholder.com/600x600?text=JayT1017+Profile"}
                 alt="JayT1017"
                 className="w-full h-full object-cover"
               />
