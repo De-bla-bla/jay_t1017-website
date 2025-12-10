@@ -1,49 +1,19 @@
 import express from "express";
 import pool from "../config/database.js";
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// Configure email transporter using SMTP settings
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587"), // Changed from 465 to 587 for better compatibility
-  secure: process.env.SMTP_PORT === "465", // Only use SSL for port 465, TLS for 587
-  auth: {
-    user: process.env.SMTP_USER || process.env.EMAIL_USER || "your-email@gmail.com",
-    pass: process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || "your-app-password",
-  },
-  logger: true,
-  debug: true,
-  connectionTimeout: 10000, // 10 seconds
-  socketTimeout: 10000, // 10 seconds
-});
-
-// Test SMTP connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("⚠️ SMTP Email Configuration Error:", error.message);
-    console.error("Troubleshooting tips:");
-    console.error("1. Make sure these environment variables are set:");
-    console.error("   - SMTP_HOST (default: smtp.gmail.com)");
-    console.error("   - SMTP_PORT (587 for Gmail, 465 as fallback)");
-    console.error("   - SMTP_USER (your Gmail address)");
-    console.error("   - SMTP_PASS (Gmail App Password, NOT your regular password)");
-    console.error("   - EMAIL_FROM or EMAIL_USER");
-    console.error("2. If using Gmail, generate an App Password:");
-    console.error("   https://myaccount.google.com/apppasswords");
-    console.error("3. Enable 2-Factor Authentication on your Gmail account");
-    console.error("4. Current config:");
-    console.error("   SMTP_HOST:", process.env.SMTP_HOST || "smtp.gmail.com");
-    console.error("   SMTP_PORT:", process.env.SMTP_PORT || "587");
-    console.error("   SMTP_USER configured:", !!process.env.SMTP_USER);
-    console.error("   SMTP_PASS configured:", !!process.env.SMTP_PASS);
-  } else {
-    console.log("✓ SMTP Email service configured and ready");
-    console.log("  Using:", process.env.SMTP_HOST || "smtp.gmail.com", ":", process.env.SMTP_PORT || "587");
-  }
-});
+// Configure SendGrid
+const sendgridApiKey = process.env.SENDGRID_API_KEY;
+if (sendgridApiKey) {
+  sgMail.setApiKey(sendgridApiKey);
+  console.log("✓ SendGrid email service configured and ready");
+} else {
+  console.warn("⚠️ SENDGRID_API_KEY not configured. Email notifications will not work.");
+  console.warn("Set SENDGRID_API_KEY in your Railway environment variables.");
+}
 
 // Health check - verify SMTP configuration
 router.get("/health", (req, res) => {
@@ -109,28 +79,31 @@ router.post("/subscribe", async (req, res) => {
       );
     }
 
-    // Send confirmation email
+    // Send confirmation email via SendGrid
     try {
-      await transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com",
-        to: email,
-        subject: "Welcome to JayT1017 Newsletter! 🎵",
-        html: `
-          <h2>Welcome to JayT1017 Newsletter!</h2>
-          <p>Hey there! 👋</p>
-          <p>Thanks for subscribing to get the latest news about JayT1017's music, merch drops, and exclusive content.</p>
-          <p>You'll be the first to know when new tracks drop, exclusive merchandise releases, and special announcements!</p>
-          <hr>
-          <p><strong>Follow JayT1017:</strong></p>
-          <ul>
-            <li><a href="https://instagram.com/jay_t1017">Instagram</a></li>
-            <li><a href="https://tiktok.com/@jay_t1017">TikTok</a></li>
-            <li><a href="https://twitter.com/jayt1017x">Twitter</a></li>
-          </ul>
-          <p>Stay tuned! 🔥</p>
-          <p><strong>- JayT1017</strong></p>
-        `,
-      });
+      if (sendgridApiKey) {
+        await sgMail.send({
+          from: process.env.EMAIL_FROM || "noreply@jayt1017.com",
+          to: email,
+          subject: "Welcome to JayT1017 Newsletter! 🎵",
+          html: `
+            <h2>Welcome to JayT1017 Newsletter!</h2>
+            <p>Hey there! 👋</p>
+            <p>Thanks for subscribing to get the latest news about JayT1017's music, merch drops, and exclusive content.</p>
+            <p>You'll be the first to know when new tracks drop, exclusive merchandise releases, and special announcements!</p>
+            <hr>
+            <p><strong>Follow JayT1017:</strong></p>
+            <ul>
+              <li><a href="https://instagram.com/jay_t1017">Instagram</a></li>
+              <li><a href="https://tiktok.com/@jay_t1017">TikTok</a></li>
+              <li><a href="https://twitter.com/jayt1017x">Twitter</a></li>
+            </ul>
+            <p>Stay tuned! 🔥</p>
+            <p><strong>- JayT1017</strong></p>
+          `,
+        });
+        console.log("✓ Welcome email sent to:", email);
+      }
     } catch (emailErr) {
       console.warn("Email sending failed (this is okay if email is not configured):", emailErr.message);
       // Still return success if database insert worked
@@ -164,6 +137,10 @@ router.post("/send-to-all", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Subject and content are required" });
     }
 
+    if (!sendgridApiKey) {
+      return res.status(503).json({ error: "Email service not configured. Set SENDGRID_API_KEY" });
+    }
+
     // Get all subscribers
     const subscribersResult = await pool.query(
       "SELECT email FROM newsletter_subscribers ORDER BY email"
@@ -175,15 +152,16 @@ router.post("/send-to-all", requireAuth, async (req, res) => {
 
     const emails = subscribersResult.rows.map((row) => row.email);
 
-    // Send email to all subscribers (using BCC for privacy)
+    // Send email to all subscribers using SendGrid
     try {
       console.log(`Attempting to send email to ${emails.length} subscribers...`);
-      const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com";
+      const fromEmail = process.env.EMAIL_FROM || "noreply@jayt1017.com";
       
-      await transporter.sendMail({
+      await sgMail.sendMultiple({
         from: fromEmail,
-        to: fromEmail, // Send to admin, BCC subscribers for privacy
-        bcc: emails,
+        personalizations: emails.map((email) => ({
+          to: [{ email }],
+        })),
         subject: subject,
         html: htmlContent,
       });
@@ -195,9 +173,7 @@ router.post("/send-to-all", requireAuth, async (req, res) => {
       });
     } catch (emailErr) {
       console.error("Email sending failed:", emailErr);
-      console.error("SMTP Host:", process.env.SMTP_HOST);
-      console.error("SMTP Port:", process.env.SMTP_PORT);
-      console.error("SMTP User configured:", !!process.env.SMTP_USER);
+      console.error("SendGrid API Key configured:", !!process.env.SENDGRID_API_KEY);
       res.status(500).json({ 
         error: "Failed to send email: " + emailErr.message,
         debug: process.env.NODE_ENV === "development" ? emailErr : undefined
@@ -216,6 +192,10 @@ router.post("/notify-new-music", requireAuth, async (req, res) => {
 
     if (!title || !url) {
       return res.status(400).json({ error: "Title and URL are required" });
+    }
+
+    if (!sendgridApiKey) {
+      return res.status(503).json({ error: "Email service not configured. Set SENDGRID_API_KEY" });
     }
 
     // Get all subscribers
@@ -245,15 +225,16 @@ router.post("/notify-new-music", requireAuth, async (req, res) => {
       <p>🔥 Stay tuned for more!</p>
     `;
 
-    // Send notification email (using BCC for privacy)
+    // Send notification email via SendGrid
     try {
-      const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com";
+      const fromEmail = process.env.EMAIL_FROM || "noreply@jayt1017.com";
       console.log(`Sending music notification to ${emails.length} subscribers...`);
       
-      await transporter.sendMail({
+      await sgMail.sendMultiple({
         from: fromEmail,
-        to: fromEmail, // Send to admin, BCC subscribers for privacy
-        bcc: emails,
+        personalizations: emails.map((email) => ({
+          to: [{ email }],
+        })),
         subject: `🎵 New Release: ${title}`,
         html: htmlContent,
       });
@@ -285,6 +266,10 @@ router.post("/notify-new-merch", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Name and price are required" });
     }
 
+    if (!sendgridApiKey) {
+      return res.status(503).json({ error: "Email service not configured. Set SENDGRID_API_KEY" });
+    }
+
     // Get all subscribers
     const subscribersResult = await pool.query(
       "SELECT email FROM newsletter_subscribers ORDER BY email"
@@ -311,15 +296,16 @@ router.post("/notify-new-merch", requireAuth, async (req, res) => {
       <p>🔥 Get yours before they're gone!</p>
     `;
 
-    // Send notification email (using BCC for privacy)
+    // Send notification email via SendGrid
     try {
-      const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com";
+      const fromEmail = process.env.EMAIL_FROM || "noreply@jayt1017.com";
       console.log(`Sending merch notification to ${emails.length} subscribers...`);
       
-      await transporter.sendMail({
+      await sgMail.sendMultiple({
         from: fromEmail,
-        to: fromEmail, // Send to admin, BCC subscribers for privacy
-        bcc: emails,
+        personalizations: emails.map((email) => ({
+          to: [{ email }],
+        })),
         subject: `🛍️ New Drop: ${name}`,
         html: htmlContent,
       });
