@@ -31,6 +31,19 @@ export default function AdminDashboard() {
   });
   const [profileImage, setProfileImage] = useState(null);
   const [heroImage, setHeroImage] = useState(null);
+  const [profileData, setProfileData] = useState({
+    artistName: "JayT1017",
+    bio: "Emo Rap Artist from Ghana",
+    profileImage: "",
+    socialLinks: {
+      instagram: "https://instagram.com/jay_t1017",
+      tiktok: "https://tiktok.com/@jay_t1017",
+      twitter: "https://twitter.com/jayt1017x",
+      facebook: "https://facebook.com/JayT1017",
+      snapchat: "https://snapchat.com/add/jay_t2021395",
+      appleMusic: "https://music.apple.com",
+    },
+  });
   const [musicItems, setMusicItems] = useState([]);
   const [editingMusic, setEditingMusic] = useState(null);
   const [musicFormData, setMusicFormData] = useState({
@@ -40,32 +53,6 @@ export default function AdminDashboard() {
     platform: "spotify",
     description: "",
   });
-
-  // Initialize Filestack and fetch data on mount
-  useEffect(() => {
-    const isAuthenticated = sessionStorage.getItem("admin_authenticated");
-    if (!isAuthenticated) {
-      navigate("/admin");
-      return;
-    }
-    
-    // Initialize Filestack client. We support runtime-injected config via window.__RUNTIME__
-    const key = (typeof window !== 'undefined' && window.__RUNTIME__ && window.__RUNTIME__.VITE_FILESTACK_API_KEY) || FILESTACK_API_KEY;
-    if (key) {
-      try {
-        const client = filestack.init(key);
-        console.log("✓ Filestack client initialized");
-        setFilestackClient(client);
-      } catch (err) {
-        console.error("Failed to initialize Filestack:", err);
-      }
-    } else {
-      console.warn("Filestack API key is not set. To configure, add VITE_FILESTACK_API_KEY as a Railway variable or set it in your local .env.");
-    }
-    
-    fetchStats();
-    fetchMerch();
-  }, [navigate]);
 
   // Get JWT token from sessionStorage
   const getAuthHeaders = () => {
@@ -94,6 +81,63 @@ export default function AdminDashboard() {
       setMerchItems(response.data);
     } catch (err) {
       console.error("Error fetching merch:", err);
+    }
+  };
+
+  // Fetch admin profile
+  const fetchProfile = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/admin/profile`, { headers: getAuthHeaders() });
+      setProfileData(response.data);
+      if (response.data.profileImage) {
+        setProfileImage(response.data.profileImage);
+      }
+    } catch (err) {
+      console.error("Error fetching profile:", err);
+    }
+  };
+
+  // Initialize Filestack and fetch data on mount
+  useEffect(() => {
+    const isAuthenticated = sessionStorage.getItem("admin_authenticated");
+    if (!isAuthenticated) {
+      navigate("/admin");
+      return;
+    }
+    
+    // Initialize Filestack client. We support runtime-injected config via window.__RUNTIME__
+    const key = (typeof window !== 'undefined' && window.__RUNTIME__ && window.__RUNTIME__.VITE_FILESTACK_API_KEY) || FILESTACK_API_KEY;
+    if (key) {
+      try {
+        const client = filestack.init(key);
+        console.log("✓ Filestack client initialized");
+        setFilestackClient(client);
+      } catch (err) {
+        console.error("Failed to initialize Filestack:", err);
+      }
+    } else {
+      console.warn("Filestack API key is not set. To configure, add VITE_FILESTACK_API_KEY as a Railway variable or set it in your local .env.");
+    }
+
+    fetchStats();
+    fetchMerch();
+    fetchProfile();
+  }, [navigate]);
+
+  // Save admin profile
+  const handleSaveProfile = async () => {
+    try {
+      const updatedProfile = {
+        ...profileData,
+        profileImage: profileImage || profileData.profileImage || "",
+      };
+      await axios.put(`${API_URL}/api/admin/profile`, updatedProfile, { headers: getAuthHeaders() });
+      alert("Profile saved successfully!");
+      // Refresh to confirm save
+      const response = await axios.get(`${API_URL}/api/admin/profile`, { headers: getAuthHeaders() });
+      setProfileData(response.data);
+    } catch (err) {
+      alert("Error saving profile: " + err.message);
     }
   };
 
@@ -723,16 +767,18 @@ export default function AdminDashboard() {
                 <input
                   type="text"
                   placeholder="Artist Name"
-                  defaultValue="JayT1017"
+                  value={profileData.artistName || ""}
+                  onChange={(e) => setProfileData({ ...profileData, artistName: e.target.value })}
                   className="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2 text-white"
                 />
                 <textarea
                   placeholder="Bio"
-                  defaultValue="Emo Rap Artist from Ghana"
+                  value={profileData.bio || ""}
+                  onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
                   className="w-full bg-dark-900 border border-dark-700 rounded px-4 py-2 text-white"
                   rows="4"
                 />
-                <button className="btn-primary">Save Profile</button>
+                <button onClick={handleSaveProfile} className="btn-primary">Save Profile</button>
               </div>
             </div>
           </div>
