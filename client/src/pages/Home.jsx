@@ -12,7 +12,7 @@ const runtime = (typeof window !== 'undefined' && window.__RUNTIME__) || {};
 const API_URL = runtime.VITE_API_URL || import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Home() {
-  const [heroImage, setHeroImage] = useState(() => localStorage.getItem("heroImage"));
+  const [heroImage, setHeroImage] = useState(null);
   const [profile, setProfile] = useState({
     artistName: "JayT1017",
     bio: "Emo Rap Artist from Ghana",
@@ -29,6 +29,8 @@ export default function Home() {
           bio: response.data.bio || "Emo Rap Artist from Ghana",
           profileImage: response.data.profileImage || null,
         });
+        // Set hero image separately
+        setHeroImage(response.data.heroImage || null);
       } catch (err) {
         console.error("Error fetching profile:", err);
         // Keep defaults if fetch fails
@@ -179,7 +181,7 @@ export default function Home() {
           <div className="relative hidden md:block">
             <div className="w-full aspect-square bg-gradient-to-br from-accent-purple/30 to-accent-pink/30 rounded-2xl overflow-hidden border-2 border-accent-purple/50">
               <img
-                src={profile.profileImage || heroImage || "https://via.placeholder.com/600x600?text=JayT1017+Profile"}
+                src={heroImage || "https://via.placeholder.com/600x600?text=JayT1017+Profile"}
                 alt="JayT1017"
                 className="w-full h-full object-cover"
               />

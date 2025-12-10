@@ -28,10 +28,17 @@ async function ensureTables() {
         artist_name VARCHAR(255),
         bio TEXT,
         profile_image TEXT,
+        hero_image TEXT,
         social_links JSONB,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    // Add hero_image column if it doesn't exist (migration)
+    await pool.query(`
+      ALTER TABLE admin_profile
+      ADD COLUMN IF NOT EXISTS hero_image TEXT;
     `);
 
     // Create merch table if it doesn't exist

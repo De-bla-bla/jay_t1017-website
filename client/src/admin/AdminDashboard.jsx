@@ -92,6 +92,9 @@ export default function AdminDashboard() {
       if (response.data.profileImage) {
         setProfileImage(response.data.profileImage);
       }
+      if (response.data.heroImage) {
+        setHeroImage(response.data.heroImage);
+      }
     } catch (err) {
       console.error("Error fetching profile:", err);
     }
@@ -130,12 +133,19 @@ export default function AdminDashboard() {
       const updatedProfile = {
         ...profileData,
         profileImage: profileImage || profileData.profileImage || "",
+        heroImage: heroImage || profileData.heroImage || "",
       };
       await axios.put(`${API_URL}/api/admin/profile`, updatedProfile, { headers: getAuthHeaders() });
-      alert("Profile saved successfully!");
+      alert("Profile and images saved successfully!");
       // Refresh to confirm save
       const response = await axios.get(`${API_URL}/api/admin/profile`, { headers: getAuthHeaders() });
       setProfileData(response.data);
+      if (response.data.heroImage) {
+        setHeroImage(response.data.heroImage);
+      }
+      if (response.data.profileImage) {
+        setProfileImage(response.data.profileImage);
+      }
     } catch (err) {
       alert("Error saving profile: " + err.message);
     }
@@ -350,9 +360,7 @@ export default function AdminDashboard() {
           if (result.filesUploaded && result.filesUploaded.length > 0) {
             const fileUrl = result.filesUploaded[0].url;
             setHeroImage(fileUrl);
-            // Save to localStorage so it persists
-            localStorage.setItem("heroImage", fileUrl);
-            alert("Hero image uploaded successfully!");
+            alert("Hero image uploaded successfully! Click 'Save Profile' to persist.");
           }
         }
       });
@@ -815,10 +823,7 @@ export default function AdminDashboard() {
                   </button>
                   {heroImage && (
                     <button
-                      onClick={() => {
-                        setHeroImage(null);
-                        localStorage.removeItem("heroImage");
-                      }}
+                      onClick={() => setHeroImage(null)}
                       className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
                     >
                       Remove

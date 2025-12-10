@@ -92,6 +92,7 @@ router.get("/profile", async (req, res) => {
         artistName: "JayT1017",
         bio: "Emo Rap Artist from Ghana",
         profileImage: "",
+        heroImage: "",
         socialLinks: {
           instagram: "https://instagram.com/jay_t1017",
           tiktok: "https://tiktok.com/@jay_t1017",
@@ -109,6 +110,7 @@ router.get("/profile", async (req, res) => {
       artistName: profile.artist_name,
       bio: profile.bio,
       profileImage: profile.profile_image,
+      heroImage: profile.hero_image || "",
       socialLinks: profile.social_links || {},
     });
   } catch (err) {
@@ -120,7 +122,7 @@ router.get("/profile", async (req, res) => {
 // Update admin profile (requires auth)
 router.put("/profile", requireAuth, async (req, res) => {
   try {
-    const { artistName, bio, profileImage, socialLinks } = req.body;
+    const { artistName, bio, profileImage, heroImage, socialLinks } = req.body;
     
     // Check if profile exists
     const checkResult = await pool.query("SELECT id FROM admin_profile WHERE id = 1");
@@ -129,14 +131,14 @@ router.put("/profile", requireAuth, async (req, res) => {
     if (checkResult.rows.length === 0) {
       // Insert if doesn't exist
       result = await pool.query(
-        "INSERT INTO admin_profile (id, artist_name, bio, profile_image, social_links) VALUES (1, $1, $2, $3, $4) RETURNING *",
-        [artistName, bio, profileImage, JSON.stringify(socialLinks || {})]
+        "INSERT INTO admin_profile (id, artist_name, bio, profile_image, hero_image, social_links) VALUES (1, $1, $2, $3, $4, $5) RETURNING *",
+        [artistName, bio, profileImage, heroImage, JSON.stringify(socialLinks || {})]
       );
     } else {
       // Update if exists
       result = await pool.query(
-        "UPDATE admin_profile SET artist_name = $1, bio = $2, profile_image = $3, social_links = $4, updated_at = CURRENT_TIMESTAMP WHERE id = 1 RETURNING *",
-        [artistName, bio, profileImage, JSON.stringify(socialLinks || {})]
+        "UPDATE admin_profile SET artist_name = $1, bio = $2, profile_image = $3, hero_image = $4, social_links = $5, updated_at = CURRENT_TIMESTAMP WHERE id = 1 RETURNING *",
+        [artistName, bio, profileImage, heroImage, JSON.stringify(socialLinks || {})]
       );
     }
     
@@ -147,6 +149,7 @@ router.put("/profile", requireAuth, async (req, res) => {
       artistName: profile.artist_name,
       bio: profile.bio,
       profileImage: profile.profile_image,
+      heroImage: profile.hero_image || "",
       socialLinks: profile.social_links || {},
     });
   } catch (err) {
