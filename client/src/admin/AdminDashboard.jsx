@@ -383,24 +383,36 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-950 text-white">
+    <div className={`min-h-screen transition-colors duration-300 ${
+      darkMode 
+        ? 'bg-dark-950 text-white' 
+        : 'bg-gray-50 text-gray-900'
+    }`}>
       {/* Mobile Menu Toggle */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-dark-900 border-b border-dark-700 flex items-center justify-between px-4 z-50">
+      <div className={`md:hidden fixed top-0 left-0 right-0 h-16 ${
+        darkMode
+          ? 'bg-dark-900 border-b border-dark-700'
+          : 'bg-white border-b border-gray-200'
+      } flex items-center justify-between px-4 z-50`}>
         <h1 className="font-bold gradient-text">JayT1017 Admin</h1>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="text-white"
+          className={darkMode ? 'text-white' : 'text-gray-900'}
         >
           {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
       {/* Sidebar - Mobile Overlay + Desktop Fixed */}
-      <div className={`fixed left-0 top-0 w-64 h-screen bg-dark-900 border-r border-dark-700 flex flex-col z-40 transition-transform duration-300 ${
+      <div className={`fixed left-0 top-0 w-64 h-screen ${
+        darkMode
+          ? 'bg-dark-900 border-r border-dark-700'
+          : 'bg-white border-r border-gray-200'
+      } flex flex-col z-40 transition-transform duration-300 ${
         isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       } md:translate-x-0`}>
         {/* Logo */}
-        <div className="p-6 border-b border-dark-700 mt-16 md:mt-0">
+        <div className={`p-6 ${darkMode ? 'border-b border-dark-700' : 'border-b border-gray-200'} mt-16 md:mt-0`}>
           <div className="flex items-center gap-3">
             {profileImage ? (
               <img
@@ -415,7 +427,7 @@ export default function AdminDashboard() {
             )}
             <div>
               <h1 className="font-bold gradient-text">JayT1017</h1>
-              <p className="text-xs text-gray-500">Admin Panel</p>
+              <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>Admin Panel</p>
             </div>
           </div>
         </div>
@@ -439,7 +451,9 @@ export default function AdminDashboard() {
               className={`w-full text-left px-4 py-2 rounded-lg transition ${
                 activeTab === tab.id
                   ? "bg-accent-purple text-white"
-                  : "text-gray-400 hover:bg-dark-800"
+                  : darkMode
+                    ? "text-gray-400 hover:bg-dark-800"
+                    : "text-gray-600 hover:bg-gray-100"
               }`}
             >
               {tab.icon} {tab.label}
@@ -448,7 +462,7 @@ export default function AdminDashboard() {
         </nav>
 
         {/* Logout */}
-        <div className="p-4 border-t border-dark-700">
+        <div className={`p-4 ${darkMode ? 'border-t border-dark-700' : 'border-t border-gray-200'}`}>
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition"
@@ -468,7 +482,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Main Content */}
-      <div className="md:ml-64 pt-20 md:pt-0 p-4 md:p-8">
+      <div className={`md:ml-64 pt-20 md:pt-0 p-4 md:p-8 ${darkMode ? '' : 'bg-gray-50'}`}>
         {/* Overview Tab */}
         {activeTab === "overview" && (
           <div>
@@ -902,11 +916,11 @@ export default function AdminDashboard() {
         {activeTab === "settings" && (
           <div>
             <h2 className="text-3xl font-bold mb-8 gradient-text">Settings</h2>
-            <div className="bg-dark-800 rounded-lg p-6 border border-dark-700 space-y-6">
+            <div className={`${darkMode ? 'bg-dark-800 border-dark-700' : 'bg-white border-gray-200'} rounded-lg p-6 border space-y-6`}>
               <div className="flex justify-between items-center">
                 <div>
                   <span className="font-semibold">Dark Mode</span>
-                  <p className="text-sm text-gray-400">Currently: {darkMode ? "Enabled ✓" : "Disabled"}</p>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Currently: {darkMode ? "Enabled ✓" : "Light Mode"}</p>
                 </div>
                 <input 
                   type="checkbox" 
@@ -915,11 +929,11 @@ export default function AdminDashboard() {
                   className="w-6 h-6 cursor-pointer" 
                 />
               </div>
-              <hr className="border-dark-700" />
+              <hr className={darkMode ? 'border-dark-700' : 'border-gray-200'} />
               <div className="flex justify-between items-center">
                 <div>
                   <span className="font-semibold">Email Notifications</span>
-                  <p className="text-sm text-gray-400">Receive email updates about orders and activity</p>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Receive email updates about orders and activity</p>
                 </div>
                 <input 
                   type="checkbox" 
@@ -928,7 +942,7 @@ export default function AdminDashboard() {
                   className="w-6 h-6 cursor-pointer" 
                 />
               </div>
-              <hr className="border-dark-700" />
+              <hr className={darkMode ? 'border-dark-700' : 'border-gray-200'} />
               <button className="btn-primary mt-6 w-full">Save Settings</button>
             </div>
           </div>
