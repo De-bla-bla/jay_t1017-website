@@ -14,6 +14,23 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER || process.env.EMAIL_USER || "your-email@gmail.com",
     pass: process.env.SMTP_PASS || process.env.EMAIL_PASSWORD || "your-app-password",
   },
+  logger: true,
+  debug: true,
+});
+
+// Test SMTP connection on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("⚠️ SMTP Email Configuration Error:", error.message);
+    console.error("Make sure these environment variables are set:");
+    console.error("  - SMTP_HOST");
+    console.error("  - SMTP_PORT");
+    console.error("  - SMTP_USER");
+    console.error("  - SMTP_PASS");
+    console.error("  - EMAIL_FROM or EMAIL_USER");
+  } else {
+    console.log("✓ SMTP Email service configured and ready");
+  }
 });
 
 // Subscribe to newsletter
@@ -123,13 +140,16 @@ router.post("/send-to-all", requireAuth, async (req, res) => {
     }
 
     const emails = subscribersResult.rows.map((row) => row.email);
-    const emailList = emails.join(", ");
 
-    // Send email to all subscribers
+    // Send email to all subscribers (using BCC for privacy)
     try {
+      console.log(`Attempting to send email to ${emails.length} subscribers...`);
+      const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com";
+      
       await transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com",
-        to: emailList,
+        from: fromEmail,
+        to: fromEmail, // Send to admin, BCC subscribers for privacy
+        bcc: emails,
         subject: subject,
         html: htmlContent,
       });
@@ -140,8 +160,14 @@ router.post("/send-to-all", requireAuth, async (req, res) => {
         subscriberCount: emails.length,
       });
     } catch (emailErr) {
-      console.error("Email sending failed:", emailErr.message);
-      res.status(500).json({ error: "Failed to send email: " + emailErr.message });
+      console.error("Email sending failed:", emailErr);
+      console.error("SMTP Host:", process.env.SMTP_HOST);
+      console.error("SMTP Port:", process.env.SMTP_PORT);
+      console.error("SMTP User configured:", !!process.env.SMTP_USER);
+      res.status(500).json({ 
+        error: "Failed to send email: " + emailErr.message,
+        debug: process.env.NODE_ENV === "development" ? emailErr : undefined
+      });
     }
   } catch (err) {
     console.error("Error in send-to-all:", err.message);
@@ -168,7 +194,6 @@ router.post("/notify-new-music", requireAuth, async (req, res) => {
     }
 
     const emails = subscribersResult.rows.map((row) => row.email);
-    const emailList = emails.join(", ");
 
     const htmlContent = `
       <h2>🎵 New Music Release!</h2>
@@ -186,11 +211,15 @@ router.post("/notify-new-music", requireAuth, async (req, res) => {
       <p>🔥 Stay tuned for more!</p>
     `;
 
-    // Send notification email
+    // Send notification email (using BCC for privacy)
     try {
+      const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com";
+      console.log(`Sending music notification to ${emails.length} subscribers...`);
+      
       await transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com",
-        to: emailList,
+        from: fromEmail,
+        to: fromEmail, // Send to admin, BCC subscribers for privacy
+        bcc: emails,
         subject: `🎵 New Release: ${title}`,
         html: htmlContent,
       });
@@ -201,8 +230,11 @@ router.post("/notify-new-music", requireAuth, async (req, res) => {
         subscriberCount: emails.length,
       });
     } catch (emailErr) {
-      console.error("Notification sending failed:", emailErr.message);
-      res.status(500).json({ error: "Failed to send notification: " + emailErr.message });
+      console.error("Music notification sending failed:", emailErr);
+      res.status(500).json({ 
+        error: "Failed to send notification: " + emailErr.message,
+        debug: process.env.NODE_ENV === "development" ? emailErr : undefined
+      });
     }
   } catch (err) {
     console.error("Error in notify-new-music:", err.message);
@@ -229,7 +261,6 @@ router.post("/notify-new-merch", requireAuth, async (req, res) => {
     }
 
     const emails = subscribersResult.rows.map((row) => row.email);
-    const emailList = emails.join(", ");
 
     const imageHtml = image ? `<p><img src="${image}" alt="${name}" style="max-width: 300px; border-radius: 8px; margin: 20px 0;"></p>` : "";
 
@@ -246,11 +277,15 @@ router.post("/notify-new-merch", requireAuth, async (req, res) => {
       <p>🔥 Get yours before they're gone!</p>
     `;
 
-    // Send notification email
+    // Send notification email (using BCC for privacy)
     try {
+      const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com";
+      console.log(`Sending merch notification to ${emails.length} subscribers...`);
+      
       await transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER || "noreply@jayt1017.com",
-        to: emailList,
+        from: fromEmail,
+        to: fromEmail, // Send to admin, BCC subscribers for privacy
+        bcc: emails,
         subject: `🛍️ New Drop: ${name}`,
         html: htmlContent,
       });
@@ -261,8 +296,11 @@ router.post("/notify-new-merch", requireAuth, async (req, res) => {
         subscriberCount: emails.length,
       });
     } catch (emailErr) {
-      console.error("Notification sending failed:", emailErr.message);
-      res.status(500).json({ error: "Failed to send notification: " + emailErr.message });
+      console.error("Merch notification sending failed:", emailErr);
+      res.status(500).json({ 
+        error: "Failed to send notification: " + emailErr.message,
+        debug: process.env.NODE_ENV === "development" ? emailErr : undefined
+      });
     }
   } catch (err) {
     console.error("Error in notify-new-merch:", err.message);
