@@ -102,9 +102,16 @@ async function ensureTables() {
         url TEXT NOT NULL,
         platform VARCHAR(50),
         description TEXT,
+        cover_image TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    // Add cover_image column if it doesn't exist (migration)
+    await pool.query(`
+      ALTER TABLE music
+      ADD COLUMN IF NOT EXISTS cover_image TEXT;
     `);
 
     console.log('all tables ready');

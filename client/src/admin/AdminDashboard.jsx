@@ -55,6 +55,7 @@ export default function AdminDashboard() {
     url: "",
     platform: "spotify",
     description: "",
+    coverImage: "",
   });
 
   // Newsletter states
@@ -353,7 +354,11 @@ export default function AdminDashboard() {
       return;
     }
     try {
-      const response = await axios.post(`${API_URL}/api/music`, musicFormData, {
+      const payload = { ...musicFormData };
+      // ensure field name expected by server
+      payload.coverImage = musicFormData.coverImage || "";
+
+      const response = await axios.post(`${API_URL}/api/music`, payload, {
         headers: getAuthHeaders(),
       });
       console.log("✓ Music added:", response.data);
@@ -364,6 +369,7 @@ export default function AdminDashboard() {
         url: "",
         platform: "spotify",
         description: "",
+        coverImage: "",
       });
 
       // Ask if admin wants to notify subscribers
@@ -407,7 +413,8 @@ export default function AdminDashboard() {
   const handleUpdateMusic = async () => {
     if (!editingMusic) return;
     try {
-      const response = await axios.put(`${API_URL}/api/music/${editingMusic.id}`, musicFormData, {
+      const payload = { ...musicFormData, coverImage: musicFormData.coverImage || "" };
+      const response = await axios.put(`${API_URL}/api/music/${editingMusic.id}`, payload, {
         headers: getAuthHeaders(),
       });
       console.log("✓ Music updated:", response.data);
@@ -457,7 +464,38 @@ export default function AdminDashboard() {
       url: item.url,
       platform: item.platform,
       description: item.description || "",
+      coverImage: item.cover_image || "",
     });
+  };
+
+  // Filestack upload for music cover image
+  const handleFilestackMusicUpload = async () => {
+    if (!FILESTACK_API_KEY) {
+      alert("Filestack API key not configured. Please add VITE_FILESTACK_API_KEY to .env.local");
+      return;
+    }
+
+    if (!filestackClient) {
+      alert("Filestack is initializing. Please wait a moment and try again.");
+      return;
+    }
+
+    try {
+      const picker = filestackClient.picker({
+        onUploadDone: (result) => {
+          console.log("Upload complete:", result);
+          if (result.filesUploaded && result.filesUploaded.length > 0) {
+            const fileUrl = result.filesUploaded[0].url;
+            setMusicFormData({ ...musicFormData, coverImage: fileUrl });
+            alert("Cover image uploaded successfully!");
+          }
+        }
+      });
+      picker.open();
+    } catch (err) {
+      console.error("Filestack error:", err);
+      alert(`Upload failed: ${err.message || "Please try again"}`);
+    }
   };
 
   // Filestack upload for profile photo
@@ -868,6 +906,22 @@ export default function AdminDashboard() {
                   className="col-span-2 bg-dark-900 border border-dark-700 rounded px-3 py-2 text-white"
                   rows="2"
                 />
+                <div className="col-span-2 flex gap-2 items-center">
+                  <button
+                    onClick={handleFilestackMusicUpload}
+                    className="flex-1 bg-accent-blue hover:bg-accent-purple px-3 py-2 rounded text-sm transition flex items-center justify-center gap-2"
+                  >
+                    <Upload size={16} />
+                    Upload Cover Image (Filestack)
+                  </button>
+                  {musicFormData.coverImage && (
+                    <img
+                      src={musicFormData.coverImage}
+                      alt="Cover Preview"
+                      className="w-20 h-20 object-cover rounded border border-dark-700"
+                    />
+                  )}
+                </div>
               </div>
               <div className="flex gap-4 mt-4">
                 <button
@@ -887,6 +941,7 @@ export default function AdminDashboard() {
                         url: "",
                         platform: "spotify",
                         description: "",
+                        coverImage: "",
                       });
                     }}
                     className="btn-secondary"
@@ -907,6 +962,11 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {musicItems.map((item) => (
                   <div key={item.id} className="bg-dark-800 rounded-lg p-4 border border-dark-700">
+                    {item.cover_image && (
+                      <div className="mb-3">
+                        <img src={item.cover_image} alt={item.title} className="w-full h-40 object-cover rounded mb-3" />
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex-1">
                         <h4 className="font-bold text-lg">{item.title}</h4>

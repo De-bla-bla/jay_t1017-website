@@ -34,7 +34,7 @@ router.get("/:id", async (req, res) => {
 // Add new music track (requires auth)
 router.post("/", requireAuth, async (req, res) => {
   try {
-    const { title, artist, url, platform, description } = req.body;
+    const { title, artist, url, platform, description, coverImage } = req.body;
 
     if (!title || !url) {
       return res.status(400).json({ error: "Title and URL are required" });
@@ -43,8 +43,8 @@ router.post("/", requireAuth, async (req, res) => {
     // Try database first
     try {
       const result = await pool.query(
-        "INSERT INTO music (title, artist, url, platform, description) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-        [title, artist || "", url, platform || "spotify", description || ""]
+        "INSERT INTO music (title, artist, url, platform, description, cover_image) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+        [title, artist || "", url, platform || "spotify", description || "", coverImage || ""]
       );
       console.log("track saved:", result.rows[0]);
       return res.status(201).json(result.rows[0]);
@@ -59,6 +59,7 @@ router.post("/", requireAuth, async (req, res) => {
           url TEXT NOT NULL,
           platform VARCHAR(50),
           description TEXT,
+          cover_image TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -67,8 +68,8 @@ router.post("/", requireAuth, async (req, res) => {
       
       // Try insert again
       const result = await pool.query(
-        "INSERT INTO music (title, artist, url, platform, description) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-        [title, artist || "", url, platform || "spotify", description || ""]
+        "INSERT INTO music (title, artist, url, platform, description, cover_image) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+        [title, artist || "", url, platform || "spotify", description || "", coverImage || ""]
       );
       console.log("track saved:", result.rows[0]);
       return res.status(201).json(result.rows[0]);
@@ -83,11 +84,11 @@ router.post("/", requireAuth, async (req, res) => {
 router.put("/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, artist, url, platform, description } = req.body;
+    const { title, artist, url, platform, description, coverImage } = req.body;
 
     const result = await pool.query(
-      "UPDATE music SET title = $1, artist = $2, url = $3, platform = $4, description = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6 RETURNING *",
-      [title, artist || "", url, platform || "spotify", description || "", id]
+      "UPDATE music SET title = $1, artist = $2, url = $3, platform = $4, description = $5, cover_image = $6, updated_at = CURRENT_TIMESTAMP WHERE id = $7 RETURNING *",
+      [title, artist || "", url, platform || "spotify", description || "", coverImage || "", id]
     );
 
     if (result.rows.length === 0) {

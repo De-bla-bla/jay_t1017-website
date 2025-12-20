@@ -255,6 +255,13 @@ export default function Home() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {musicTracks.map((track) => (
                 <div key={track.id} className="bg-dark-800 rounded-lg p-6 border border-dark-700 hover:border-accent-purple/50 transition">
+                  <div className="w-full h-48 mb-4 rounded overflow-hidden bg-dark-900">
+                    <img
+                      src={track.cover_image || track.coverImage || "https://via.placeholder.com/600x600?text=Cover+Art"}
+                      alt={track.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                   <h3 className="text-lg font-bold mb-2">{track.title}</h3>
                   {track.artist && <p className="text-gray-400 mb-3">{track.artist}</p>}
                   {track.description && <p className="text-gray-400 text-sm mb-4">{track.description}</p>}
